@@ -16,3 +16,7 @@ class general_methods:
     @staticmethod
     def input_password(prompt="Password: "):
         return getpass.getpass(prompt)
+    
+    @staticmethod
+    def hidden_input(prompt=""):
+        return getpass.getpass(prompt)
