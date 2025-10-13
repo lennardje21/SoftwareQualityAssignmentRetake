@@ -17,7 +17,6 @@ def user_menu(user_data: User):
         print("----------------------------------------------------------------------------")
         print("|" + f"User Menu".center(75) + "|")
         print("----------------------------------------------------------------------------")
-        print("\n--- User Menu ---")
         number = 1
 
         if is_authorized(user_data.role, "update_own_password"):
