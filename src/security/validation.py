@@ -84,10 +84,10 @@ class Validation:
     
     @staticmethod
     def username_validation(username):
-        if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{3,30}$", username):
+        if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{8,10}$", username):
             return True
         print("Username is not valid")
-        log_instance.log_invalid_input(username, "username", "Username must be 3-30 characters long and can only contain letters, numbers, and underscores")
+        log_instance.log_invalid_input(username, "username", "Username must be 8-10 characters long and can only contain letters, numbers, and underscores")
         return False
     
     @staticmethod
@@ -154,7 +154,7 @@ class Validation:
     
     @staticmethod
     def phone_validation(phone, username):
-        if re.fullmatch(r"\+31-6-\d{8}$", phone):
+        if re.fullmatch(r"\d{8}$", phone):
             return True
         print("Phone number is not valid (expected +31-6-xxxxxxxx)")
         log_instance.log_invalid_input(username, "phone", "Phone number must be +31-6-XXXXXXXX")
