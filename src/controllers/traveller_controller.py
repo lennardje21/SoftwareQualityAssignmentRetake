@@ -52,7 +52,6 @@ def get_valid_input(prompt, validation_fn, username, field_name):
     print("Too many failed attempts. You have been logged out.")
     sys.exit()
 
-
 def show_travellers(current_user):
     require_authorization(current_user, 'show_traveller')
     general_methods.clear_console()
@@ -67,7 +66,7 @@ def show_travellers(current_user):
     else:
         print("No travellers found.")
 
-    general_methods.hidden_input("\nPress Enter to return to the user menu...")
+    general_methods.hidden_input("\nPress Enter to return to the traveller menu...")
 
 # TODO specify phone number format in prompt
 def add_traveller(current_user):
@@ -111,7 +110,7 @@ def add_traveller(current_user):
         print("Failed to register traveller.")
         log_instance.addlog(username, "Traveller registration failed", f"{first_name} {last_name}", True)
 
-    general_methods.hidden_input("\nPress Enter to return to the user menu...")
+    general_methods.hidden_input("\nPress Enter to return to the traveller menu...")
 
 def search_traveller(current_user):
     require_authorization(current_user, 'search_traveller')
@@ -136,7 +135,7 @@ def search_traveller(current_user):
     else:
         print("No matching travellers found.")
         log_instance.addlog(current_user.username, "Traveller search - no results", query, False)
-    general_methods.hidden_input("\nPress Enter to return to the user menu...")
+    general_methods.hidden_input("\nPress Enter to return to the traveller menu...")
 
 def update_traveller_controller(current_user):
     require_authorization(current_user, 'update_traveller')

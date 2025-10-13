@@ -12,7 +12,6 @@ class general_methods:
         pattern = re.compile(re.escape(search_key), re.IGNORECASE)
         return pattern.sub(lambda m: f'\033[92m{m.group(0)}\033[0m', value_str)
     
-    
     @staticmethod
     def input_password(prompt="Password: "):
         return getpass.getpass(prompt)
