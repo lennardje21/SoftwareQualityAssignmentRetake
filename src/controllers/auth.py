@@ -28,7 +28,7 @@ def login() -> User | None:
         print("|" + "Welcome to the Urban Mobility System".center(75) + "|")
         print("----------------------------------------------------------------------------")
         username_input = input("Username: ").strip().lower()
-        password_input = input("Password: ").strip()
+        password_input = input("Password: ").strip() #Nog geen invisible input NOTE: change later
         
         general_methods.clear_console()
         
@@ -59,6 +59,7 @@ def _handle_super_admin_login(password: str) -> User | None:
     if password == SUPER_ADMIN_PASSWORD:
         log_instance.addlog("super_admin", "Login successful", "Hardcoded login", False)
         print("Login successful! You are logged in as Super Administrator.")
+        time.sleep(2)
         return User(
             id=0, 
             username="super_admin", 
@@ -176,25 +177,30 @@ def _create_authenticated_user(username: str, user_id: int, user_data: dict, key
     # Regular successful login
     print(f"Login successful! You are logged in as {role.replace('_', ' ').title()}.")
     log_instance.addlog(username, "Login successful", "", False)
+    time.sleep(2)
     return user
 
 
 def _handle_temporary_password(user: User) -> User | None:
     """Handle temporary password change flow."""
     print("Your password is temporary. Please change it immediately.")
+    time.sleep(2)
     success = change_own_password(user)
     
     if success:
         clear_temporary_passwords(user.id)
         print("Please login again with your new password.")
+        time.sleep(2)
         return login()  # Recursive call - could be improved
     else:
         print("Password change failed. Please contact your administrator.")
+        time.sleep(2)
         return None
 
 
 def _handle_lockout(username: str) -> None:
     """Handle user lockout after too many attempts."""
+    general_methods.clear_console()
     print("Too many failed login attempts. You are now locked out.")
     log_instance.addlog(username, "Login failed", "Too many attempts", suspicious=True)
     sys.exit()
