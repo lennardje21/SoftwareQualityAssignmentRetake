@@ -9,33 +9,36 @@ from security.backup import BackupManager
 
 def service_engineer_menu(user_data):
     while True:
-        print("\n--- Service Engineer Menu ---")
+        print("----------------------------------------------------------------------------")
+        print("|" + "Service Engineer Menu".center(75) + "|")
+        print("----------------------------------------------------------------------------")
         options = {}
 
         number = 1
 
         # Can change own password
         if is_authorized(user_data.role, "update_own_password"):
-            print(f"{number}. Change Password")
+            print(f"[{number}] Change Password")
             options[str(number)] = lambda: change_own_password(user_data)
             number += 1
 
-        print(f"{number}. View Profile")
+        print(f"[{number}] View Profile")
         options[str(number)] = lambda: view_profile(user_data)
         number += 1
 
         # Only show traveller management options if the user is authorized
         if any(is_authorized(user_data.role, p) for p in ['search_scooter', 'update_scooter']):
-            print(f"{number}. Manage Scooters")
+            print(f"[{number}] Manage Scooters")
             options[str(number)] = lambda: scooter_menu(user_data)
             number += 1
 
-        print(f"{number}. Logout")
+        print(f"[{number}] Logout")
         logout_option = str(number)
         number += 1
 
-        print(f"{number}. Exit")
+        print(f"[{number}] Exit")
         exit_option = str(number)
+        print("----------------------------------------------------------------------------")
 
         choice = input("Choose an option: ").strip()
 
@@ -58,18 +61,21 @@ def system_administrator_menu(user_data):
         logger.show_suspicious_logs(user_data)
 
     """Display the system administrator menu."""
-    print("\n--- System Administrator Menu ---")
-    print("1. Change Password")
-    print("2. View Profile")
-    print("3. Traveller Management")
-    print("4. Scooter Management")
-    print("5. List All Users")
-    print("6. User Management")
-    print("7. Logout")
-    print("8. Exit")
-    print("9. View Logs")
-    print("10. Create backup")
-    print("99. Restore backup using restore code")
+    print("----------------------------------------------------------------------------")
+    print("|" + "System Admin Menu".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+    print("[1] Change Password")
+    print("[2] View Profile")
+    print("[3] Traveller Management")
+    print("[4] Scooter Management")
+    print("[5] List All Users")
+    print("[6] User Management")
+    print("[7] View Logs")
+    print("[8] Create backup")
+    print("[9] Restore backup using restore code")
+    print("[10] Logout")
+    print("[0] Exit")
+    print("----------------------------------------------------------------------------")
 
     choice = input("Choose an option: ").strip()
     if choice == '1':
@@ -85,19 +91,19 @@ def system_administrator_menu(user_data):
     elif choice == '6':
         user_menu(user_data)
     elif choice == '7':
-        print("Logging out...")
-        return False
-    elif choice == '8':
-        print("Exiting the system. Goodbye!")
-        return sys.exit()
-    elif choice == '9':
         require_authorization(user_data, 'view_logs')
         logger = LogFunction()
         logger.show_logs(user_data)
-    elif choice == '10':
+    elif choice == '8':
         BackupManager.create_backup(user_data)
-    elif choice == '99':
+    elif choice == '9':
         BackupManager.system_administrator_restore_backup(user_data)
+    elif choice == '10':
+        print("Logging out...")
+        return False
+    elif choice == '0':
+        print("Exiting the system. Goodbye!")
+        return sys.exit()
     else:
         print("Invalid choice. Please try again.")
     return True
@@ -109,19 +115,21 @@ def super_administrator_menu(user_data):
         require_authorization(user_data, 'view_logs')
         logger.show_suspicious_logs(user_data)
 
-    print("\n--- Super Administrator Menu ---")
-    print("1. View Profile")
-    print("2. Traveller Management")
-    print("3. Scooter Management")
-    print("4. User Management")
-    print("5. View Logs")
-    print("6. Logout")
-    print("7. Exit")
-    print("8. Create Backup")
-    print("9. Restore Backup")
-    print("10. Create Restore Code")
-    print("11. Revoke Restore Code")
-
+    print("----------------------------------------------------------------------------")
+    print("|" + "Super Admin Menu".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+    print("[1] View Profile")
+    print("[2] Traveller Management")
+    print("[3] Scooter Management")
+    print("[4] User Management")
+    print("[5] View Logs")
+    print("[6] Create Backup")
+    print("[7] Restore Backup")
+    print("[8] Create Restore Code")
+    print("[9] Revoke Restore Code")
+    print("[10] Logout")
+    print("[0] Exit")
+    print("----------------------------------------------------------------------------")
     choice = input("Choose an option: ").strip()
 
     if choice == '1':
@@ -136,23 +144,23 @@ def super_administrator_menu(user_data):
         require_authorization(user_data, 'view_logs')
         logger.show_logs(user_data)
     elif choice == '6':
-        print("Logging out...")
-        return False
-    elif choice == '7':
-        print("Exiting the system. Goodbye!")
-        sys.exit()
-    elif choice == '8':
         require_authorization(user_data, 'create_backup')
         BackupManager.create_backup(user_data)
-    elif choice == '9':
+    elif choice == '7':
         require_authorization(user_data, 'super_admin_restore_backup')
         BackupManager.super_admin_restore_backup(user_data)
-    elif choice == '10':
+    elif choice == '8':
         require_authorization(user_data, 'generate_restore_code')
         BackupManager.link_backup_restore_code(user_data)
-    elif choice == '11':
+    elif choice == '9':
         require_authorization(user_data, 'revoke_restore_code')
         BackupManager.revoke_restore_code_by_super_admin(user_data)
+    elif choice == '10':        
+        print("Logging out...")
+        return False
+    elif choice == '0':
+        print("Exiting the system. Goodbye!")
+        sys.exit()
     else:
         print("Invalid choice. Please try again.")
     
