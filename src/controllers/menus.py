@@ -5,10 +5,13 @@ from controllers.scooter_controller import scooter_menu
 from logs.log import LogFunction
 from controllers.rolecheck import is_authorized, require_authorization
 from security.backup import BackupManager
-
+from helpers.general_methods import general_methods
+import time
 
 def service_engineer_menu(user_data):
     while True:
+        general_methods.clear_console()
+
         print("----------------------------------------------------------------------------")
         print("|" + "Service Engineer Menu".center(75) + "|")
         print("----------------------------------------------------------------------------")
@@ -41,17 +44,22 @@ def service_engineer_menu(user_data):
         print("----------------------------------------------------------------------------")
 
         choice = input("Choose an option: ").strip()
+        general_methods.clear_console()
 
         if choice in options:
             options[choice]()  # Call the corresponding function
         elif choice == logout_option:
             print("Logging out...")
+            time.sleep(0.5)
+
             return False
         elif choice == exit_option:
             print("Exiting the system. Goodbye!")
+            time.sleep(0.5)
             sys.exit()
         else:
             print("Invalid choice. Please try again.")
+            time.sleep(0.5)
 
 def system_administrator_menu(user_data):
     logger = LogFunction()
@@ -60,7 +68,8 @@ def system_administrator_menu(user_data):
         require_authorization(user_data.role, 'view_logs')
         logger.show_suspicious_logs(user_data)
 
-    """Display the system administrator menu."""
+    general_methods.clear_console()
+    
     print("----------------------------------------------------------------------------")
     print("|" + "System Admin Menu".center(75) + "|")
     print("----------------------------------------------------------------------------")
@@ -78,6 +87,8 @@ def system_administrator_menu(user_data):
     print("----------------------------------------------------------------------------")
 
     choice = input("Choose an option: ").strip()
+    general_methods.clear_console()
+
     if choice == '1':
         change_own_password(user_data)
     elif choice == '2':
@@ -100,12 +111,16 @@ def system_administrator_menu(user_data):
         BackupManager.system_administrator_restore_backup(user_data)
     elif choice == '10':
         print("Logging out...")
+        time.sleep(0.5)
         return False
     elif choice == '0':
         print("Exiting the system. Goodbye!")
+        time.sleep(0.5)
         return sys.exit()
     else:
+        general_methods.clear_console()
         print("Invalid choice. Please try again.")
+        time.sleep(0.5)
     return True
 
 def super_administrator_menu(user_data):
@@ -114,6 +129,8 @@ def super_administrator_menu(user_data):
     if logger.check_for_suspicious_logs(user_data):
         require_authorization(user_data, 'view_logs')
         logger.show_suspicious_logs(user_data)
+
+    general_methods.clear_console()
 
     print("----------------------------------------------------------------------------")
     print("|" + "Super Admin Menu".center(75) + "|")
@@ -131,6 +148,7 @@ def super_administrator_menu(user_data):
     print("[0] Exit")
     print("----------------------------------------------------------------------------")
     choice = input("Choose an option: ").strip()
+    general_methods.clear_console()
 
     if choice == '1':
         view_profile(user_data)
@@ -157,11 +175,14 @@ def super_administrator_menu(user_data):
         BackupManager.revoke_restore_code_by_super_admin(user_data)
     elif choice == '10':        
         print("Logging out...")
+        time.sleep(0.5)
         return False
     elif choice == '0':
         print("Exiting the system. Goodbye!")
+        time.sleep(0.5)
         sys.exit()
     else:
         print("Invalid choice. Please try again.")
-    
+        time.sleep(0.5)
+
     return True
