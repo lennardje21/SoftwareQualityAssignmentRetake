@@ -4,10 +4,15 @@ from security.validation import Validation
 from logs.log import log_instance
 from controllers.rolecheck import is_authorized, require_authorization
 from security.encryption import load_symmetric_key
+from helpers.general_methods import general_methods
 
 def scooter_menu(current_user):
    while True:
-        print("\n--- Scooter Management ---")
+        general_methods.clear_console()
+        print("----------------------------------------------------------------------------")
+        print("|" + "Scooter Management".center(75) + "|")
+        print("----------------------------------------------------------------------------")
+
         options = {}
 
         number = 1
@@ -54,7 +59,12 @@ def scooter_menu(current_user):
 
 
 def add_scooter(current_user):
-    print("\n--- Add a New Scooter ---")
+
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Add a New Scooter".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     require_authorization(current_user, 'add_scooter')
     
     username = current_user.username
@@ -130,13 +140,17 @@ def add_scooter(current_user):
         log_instance.addlog(username, "Scooter creation exception", str(e), True)
         print("An error occurred while registering the scooter.")
 
+    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
 
 def show_scooters(current_user):
     require_authorization(current_user, 'show_scooter')
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Scooter List".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     scooters = list_scooters()
     if scooters:
-        print("\n--- Scooter List ---")
         for s in scooters:
             lat = float(s.location_latitude)
             lon = float(s.location_longitude)
@@ -144,11 +158,16 @@ def show_scooters(current_user):
     else:
         print("No scooters found.")
 
+    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+
 
 def deleting_scooter(current_user):
     require_authorization(current_user, 'delete_scooter')
-    
-    print("\n--- Delete a Scooter ---")
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Delete a Scooter".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     key = load_symmetric_key()
     
     serial_number = Validation.get_valid_input(
@@ -171,16 +190,23 @@ def deleting_scooter(current_user):
     else:
         print("Scooter not found.")
 
+    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+
 def update_scooter_controller(current_user):
     require_authorization(current_user, 'update_scooter')
+
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Available Scooters".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     # Show scooters
     scooters = list_scooters()
     if not scooters:
         print("No scooters available to update.")
+        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
 
-    print("\n--- Available Scooters ---")
     for s in scooters:
         print(f"ID: {s.id} | Brand: {s.brand} | Model: {s.model} | Serial: {s.serial_number}")
 
@@ -279,7 +305,6 @@ def update_scooter_controller(current_user):
         # For other fields, just get the input once
         new_value = input(f"Enter new value for {label}: ").strip()
 
-
     # SOC-range specific validation
     if choice in ['6', '7']:
         if not new_value.isdigit() or not (0 <= int(new_value) <= 100):
@@ -325,8 +350,14 @@ def update_scooter_controller(current_user):
         print("Update failed.")
         log_instance.addlog(username, f"Scooter {field_key} update failed", f"ID: {scooter_id}", True)
 
+    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+
 def search_scooter(current_user):
     require_authorization(current_user, 'search_scooter')
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Search scooter".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     query = Validation.get_valid_input(
         prompt="Enter a part of a brand/ model or serialnumber: ",
@@ -345,3 +376,5 @@ def search_scooter(current_user):
     else:
         print("No matching scooters found.")
         log_instance.addlog(current_user.username, "Scooter search - no results", query, False)
+    
+    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")

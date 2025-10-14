@@ -5,16 +5,18 @@ from logs.log import log_instance
 from controllers.rolecheck import is_authorized
 from security.password_hashing import validate_password
 from controllers.rolecheck import require_authorization
+from helpers.general_methods import general_methods
 
 def user_menu(user_data: User):
     if not isinstance(user_data, User):
         print("Access denied: invalid user type.")
         return
 
-    print(f"Welcome {user_data.username}! You are logged in.")
-
     while True:
-        print("\n--- User Menu ---")
+        general_methods.clear_console()
+        print("----------------------------------------------------------------------------")
+        print("|" + f"User Menu".center(75) + "|")
+        print("----------------------------------------------------------------------------")
         number = 1
 
         if is_authorized(user_data.role, "update_own_password"):
@@ -101,15 +103,25 @@ def user_menu(user_data: User):
 
 
 def view_profile(user):
-    print(f"User Profile:")
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "User Profile".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     print(f"Username: {user.username}")
     print(f"Role: {user.role.replace('_', ' ').title()}")
     print(f"Registration Date: {user.registration_date}")
 
+    general_methods.hidden_input("\nPress Enter to return to the user menu...")
+
 def create_new_user(current_user):
     require_authorization(current_user, 'add_new_user')
 
-    print("Creating a new user:")
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Creating a new user".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     for attempt in range(3):
         username = input("Enter username: ").strip().lower()
         if Validation.username_validation(username):
@@ -130,9 +142,17 @@ def create_new_user(current_user):
     )
 
     allowed_roles = get_permitted_roles(current_user.role)
+    # Build a mapping from both names and numbers → role names
+    role_lookup = {str(v): k for k, v in allowed_roles.items()}
+    role_lookup.update({k.lower(): k for k in allowed_roles})
+    
+    role_options = [f"{num}: {name}" for name, num in allowed_roles.items()]
+    
     for attempt in range(3):
-        role = input(f"Enter role ({'/'.join(allowed_roles)}): ").strip().lower()
-        if role in allowed_roles:
+        role = input(f"Enter role ({', '.join(role_options)}): ").strip().lower()
+        if role in role_lookup:
+            chosen_role = role_lookup[role]
+            print(f"Selected role: {chosen_role}")
             break
         else:
             print("Invalid role. Please try again.")
@@ -155,16 +175,21 @@ def create_new_user(current_user):
         )
 
     try:
-        create_user(username.lower(), firstname, lastname, password, role)
+        create_user(username.lower(), firstname, lastname, password, chosen_role)
         log_instance.addlog(current_user.username, f"User creation", f"Account with username {username} created", False)
-        print(f"User {username} created successfully.")
+        print(f"{chosen_role} {username} created successfully.")
     except Exception as e:
         log_instance.addlog(current_user.username, f"Failed User creation for {username}", str(e), True)
         print("Error while creating user. Please contact system administrator.")
 
+    general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
 def show_all_users(current_user):
     require_authorization(current_user, 'view_users')
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Creating a new user".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     users = list_users()
     if users:
@@ -172,13 +197,20 @@ def show_all_users(current_user):
             print(f"Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} | Role: {user.role} | Created on: {user.registration_date}")
     else:
         print("No users found.")
+    
+    general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
 def get_permitted_roles(user_role):
     role_permissions = {
-        'super_administrator': ['service_engineer', 'system_administrator'],
-        'system_administrator': ['service_engineer']
+        'super_administrator': {
+            'service_engineer': 1,
+            'system_administrator': 2
+        },
+        'system_administrator': {
+            'service_engineer': 1
+        }
     }
-    return role_permissions.get(user_role, [])
+    return role_permissions.get(user_role, {})
 
 def get_deletable_users(current_user):
     all_users = list_users()
@@ -197,11 +229,17 @@ def get_deletable_users(current_user):
         elif user.role == "service_engineer" and current_user.role in ["system_administrator", "super_administrator"]:
             deletable.append(user)
 
+        if user.role == "1":
+            deletable.append(user)
+
     return deletable
 
 def delete_user_account(current_user):
     require_authorization(current_user, 'delete_user')
-    print("\n--- Delete a User ---")
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Delete a User".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     deletable_users = get_deletable_users(current_user)
     if not deletable_users:
@@ -243,6 +281,8 @@ def delete_user_account(current_user):
     else:
         print("Failed to delete user.")
         log_instance.addlog(current_user.username, "User delete failed", target_user.username, True)
+    
+    general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
 def get_editable_users(current_user):
     all_users = list_users()
@@ -267,7 +307,10 @@ def get_editable_users(current_user):
 
 def update_user_account(current_user):
     require_authorization(current_user, 'update_user')
-    print("\n--- Update a User Account ---")
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Update a User Account".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     # Show all users that can be edited by the current user
     editable_users = get_editable_users(current_user)
@@ -335,13 +378,16 @@ def update_user_account(current_user):
     else:
         print("Failed to update user.")
         log_instance.addlog(current_user.username, "User update failed", str(update_data), True)
-
+    
+    general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
 def change_own_password(current_user) -> bool:
     require_authorization(current_user, 'update_own_password')
  
-
-    print("\n--- Change Your Own Password ---")
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Change Your Own Password".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     stored_hash = get_user_password_by_username(current_user.username)
     if not stored_hash:
@@ -380,7 +426,7 @@ def change_own_password(current_user) -> bool:
         log_instance.addlog(current_user.username, "Password change failed", "Database error", True)
         print("Password change failed. You are now logged out.")
         return False
-
+    
 #TODO: Check for the required role permissions before allowing password reset
 def reset_user_password(current_user):
     print("\n--- Reset User Password ---")

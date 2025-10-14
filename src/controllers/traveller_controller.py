@@ -2,11 +2,17 @@ from security.validation import Validation
 from models.traveller import create_traveller, list_travellers, find_travellers, update_traveller, delete_traveller
 from logs.log import log_instance
 from controllers.rolecheck import require_authorization
+from helpers.general_methods import general_methods
+
 import sys
 
 def traveller_menu(current_user):
     while True:
-        print("\n--- Traveller Management ---")
+        general_methods.clear_console()
+        print("----------------------------------------------------------------------------")
+        print("|" + f"Traveller Management".center(75) + "|")
+        print("----------------------------------------------------------------------------")
+
         print("1. Register new traveller")
         print("2. Search for a traveller")
         print("3. Delete a traveller")
@@ -26,7 +32,7 @@ def traveller_menu(current_user):
         elif choice == '4':
             update_traveller_controller(current_user)
         elif choice == '5':
-            show_traveller(current_user)
+            show_travellers(current_user)
             return
         elif choice == '0':
             print("Returning to previous menu...")
@@ -46,22 +52,30 @@ def get_valid_input(prompt, validation_fn, username, field_name):
     print("Too many failed attempts. You have been logged out.")
     sys.exit()
 
-
-def show_traveller(current_user):
+def show_travellers(current_user):
     require_authorization(current_user, 'show_traveller')
-    
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + f"Traveller list".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     travellers = list_travellers(current_user)
     if travellers:
-        print("\n--- Traveller List ---")
         for t in travellers:
             print(f"ID: {t.id} | Name: {t.first_name} {t.last_name} | Email: {t.email}")
     else:
         print("No travellers found.")
 
+    general_methods.hidden_input("\nPress Enter to return to the traveller menu...")
+
+# TODO specify phone number format in prompt
 def add_traveller(current_user):
     require_authorization(current_user, 'add_traveller')
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + f"Register New Traveller".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
-    print("\n--- Register New Traveller ---")
     username = current_user.username
 
     first_name = get_valid_input("First Name: ", Validation.name_validation, username, "first name")
@@ -96,8 +110,14 @@ def add_traveller(current_user):
         print("Failed to register traveller.")
         log_instance.addlog(username, "Traveller registration failed", f"{first_name} {last_name}", True)
 
+    general_methods.hidden_input("\nPress Enter to return to the traveller menu...")
+
 def search_traveller(current_user):
     require_authorization(current_user, 'search_traveller')
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + f"Search Traveller".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     query = Validation.get_valid_input(
         prompt = "Enter information you would like to search for (name, email, etc.): ",
@@ -115,11 +135,15 @@ def search_traveller(current_user):
     else:
         print("No matching travellers found.")
         log_instance.addlog(current_user.username, "Traveller search - no results", query, False)
-
-     
+    general_methods.hidden_input("\nPress Enter to return to the traveller menu...")
 
 def update_traveller_controller(current_user):
     require_authorization(current_user, 'update_traveller')
+
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + f"Update traveller".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     try:
         customer_id = int(input("Enter traveller ID to update: ").strip())
@@ -186,6 +210,11 @@ def update_traveller_controller(current_user):
 
 def delete_traveller_controller(current_user):
     require_authorization(current_user, 'delete_traveller')
+
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + f"Delete traveller".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     customer_id = input("Enter traveller ID to delete: ").strip()
     confirmation = input(f"Are you sure you want to delete traveller with ID {customer_id}? (yes/no): ").strip().lower()
