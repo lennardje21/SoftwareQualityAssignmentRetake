@@ -1,4 +1,6 @@
-import sqlite3, sys, time
+import sqlite3
+import sys
+import time
 from models.db import open_connection, close_connection
 from security.password_hashing import validate_password
 from logs.log import log_instance
