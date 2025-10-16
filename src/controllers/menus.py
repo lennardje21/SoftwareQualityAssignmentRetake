@@ -9,57 +9,48 @@ from helpers.general_methods import general_methods
 import time
 
 def service_engineer_menu(user_data):
-    while True:
-        general_methods.clear_console()
+    general_methods.clear_console()
 
-        print("----------------------------------------------------------------------------")
-        print("|" + "Service Engineer Menu".center(75) + "|")
-        print("----------------------------------------------------------------------------")
-        options = {}
+    print("----------------------------------------------------------------------------")
+    print("|" + "Service Engineer Menu".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+    print("[1] Change Password")
+    print("[2] View Profile")
+    print("[3] Manage Scooters")
+    print("[4] Logout")
+    print("[0] Exit")
+    print("----------------------------------------------------------------------------")
 
-        number = 1
+    choice = input("Choose an option: ").strip()
+    general_methods.clear_console()
 
-        # Can change own password
+    if choice == '1':
         if is_authorized(user_data.role, "update_own_password"):
-            print(f"[{number}] Change Password")
-            options[str(number)] = lambda: change_own_password(user_data)
-            number += 1
-
-        print(f"[{number}] View Profile")
-        options[str(number)] = lambda: view_profile(user_data)
-        number += 1
-
-        # Only show traveller management options if the user is authorized
-        if any(is_authorized(user_data.role, p) for p in ['search_scooter', 'update_scooter']):
-            print(f"[{number}] Manage Scooters")
-            options[str(number)] = lambda: scooter_menu(user_data)
-            number += 1
-
-        print(f"[{number}] Logout")
-        logout_option = str(number)
-        number += 1
-
-        print(f"[{number}] Exit")
-        exit_option = str(number)
-        print("----------------------------------------------------------------------------")
-
-        choice = input("Choose an option: ").strip()
-        general_methods.clear_console()
-
-        if choice in options:
-            options[choice]()  # Call the corresponding function
-        elif choice == logout_option:
-            print("Logging out...")
-            time.sleep(0.5)
-
-            return False
-        elif choice == exit_option:
-            print("Exiting the system. Goodbye!")
-            time.sleep(0.5)
-            sys.exit()
+            change_own_password(user_data)
         else:
-            print("Invalid choice. Please try again.")
+            print("You are not authorized to perform this action.")
             time.sleep(0.5)
+    elif choice == '2':
+        view_profile(user_data)
+    elif choice == '3':
+        if any(is_authorized(user_data.role, p) for p in ['search_scooter', 'update_scooter']):
+            scooter_menu(user_data)
+        else:
+            print("You are not authorized to perform this action.")
+            time.sleep(0.5)
+    elif choice == '4':
+        print("Logging out...")
+        time.sleep(0.5)
+        return False
+    elif choice == '0':
+        print("Exiting the system. Goodbye!")
+        time.sleep(0.5)
+        sys.exit()
+    else:
+        print("Invalid choice. Please try again.")
+        time.sleep(0.5)
+
+    return True
 
 def system_administrator_menu(user_data):
     logger = LogFunction()
