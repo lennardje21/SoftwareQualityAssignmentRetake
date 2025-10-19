@@ -330,7 +330,7 @@ def update_user_account(current_user):
         return
 
     for user in editable_users:
-        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} Role: {user.role}")
+        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} | Role: {user.role}")
 
     # Create a whitelist of valid user IDs
     valid_ids = [str(user.id) for user in editable_users]
