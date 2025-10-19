@@ -547,7 +547,7 @@ class BackupManager:
                 
                 if selection_attempts >= MAX_SELECTION_ATTEMPTS:
                     print("Too many failed attempts to select a valid restore code.")
-                    log_instance.addlog(current_user.username, "ackup code revoking", 
+                    log_instance.addlog(current_user.username, "backup code revoking", 
                                     f"Multiple failed restore code selection attempts ({selection_attempts})", True)
                     print("For security reasons, you have been logged out.")
                     sys.exit(1)
