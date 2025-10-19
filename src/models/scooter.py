@@ -2,9 +2,12 @@ import sqlite3
 from models.db import open_connection, close_connection
 from security.encryption import encrypt_message, decrypt_message, load_symmetric_key
 from logs.log import log_instance
+from datetime import datetime
+
+
 
 class Scooter:
-    def __init__(self, id, brand, model, serial_number, top_speed, battery_capacity, soc, soc_range_min, soc_range_max, location_latitude, location_longitude, out_of_service, mileage, last_maintenance_date=None):
+    def __init__(self, id, brand, model, serial_number, top_speed, battery_capacity, soc, soc_range_min, soc_range_max, location_latitude, location_longitude, out_of_service, mileage, last_maintenance_date=None, in_service_date=datetime.now().strftime("%Y-%m-%d")):
     
         self.id = id
         self.brand = brand
@@ -20,12 +23,17 @@ class Scooter:
         self.out_of_service = out_of_service
         self.mileage = mileage
         self.last_maintenance_date = last_maintenance_date
+        self.in_service_date = in_service_date
 
-def create_scooter(brand, model, serial_number, top_speed, battery_capacity, soc, soc_range_min, soc_range_max, location_latitude, location_longitude, out_of_service, mileage, last_maintenance_date=None):
+def create_scooter(brand, model, serial_number, top_speed, battery_capacity, soc, soc_range_min, soc_range_max, location_latitude, location_longitude, out_of_service, mileage, last_maintenance_date=None, in_service_date=None):
     conn = open_connection()
     cursor = conn.cursor()
     key = load_symmetric_key()  # Ensure the symmetric key is loaded for encryption
     try:
+        # Set default in_service_date if not provided
+        if in_service_date is None:
+            in_service_date = datetime.now().strftime("%Y-%m-%d")
+            
         # Encrypt all relevant fields as strings
         brand_enc = encrypt_message(str(brand), key)
         model_enc = encrypt_message(str(model), key)
@@ -40,16 +48,17 @@ def create_scooter(brand, model, serial_number, top_speed, battery_capacity, soc
         out_of_service_enc = encrypt_message(str(out_of_service), key)
         mileage_enc = encrypt_message(str(mileage), key)
         last_maintenance_date_enc = encrypt_message(str(last_maintenance_date), key) if last_maintenance_date else None
+        in_service_date_enc = encrypt_message(str(in_service_date), key)
 
         cursor.execute('''
             INSERT INTO scooters (
                 brand, model, serial_number, top_speed, battery_capacity, soc, soc_range_min, soc_range_max,
-                location_latitude, location_longitude, out_of_service, mileage, last_maintenance_date
+                location_latitude, location_longitude, out_of_service, mileage, last_maintenance_date, in_service_date
             )
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ''', (
             brand_enc, model_enc, serial_number_enc, top_speed_enc, battery_capacity_enc, soc_enc, soc_range_min_enc,
-            soc_range_max_enc, location_latitude_enc, location_longitude_enc, out_of_service_enc, mileage_enc, last_maintenance_date_enc
+            soc_range_max_enc, location_latitude_enc, location_longitude_enc, out_of_service_enc, mileage_enc, last_maintenance_date_enc, in_service_date_enc
         ))
         conn.commit()
         return True
@@ -82,11 +91,12 @@ def list_scooters():
             out_of_service = decrypt_message(row[11], key) == 'True'
             mileage = decrypt_message(row[12], key)
             last_maintenance_date = decrypt_message(row[13], key) if row[13] else None
+            in_service_date = decrypt_message(row[14], key) if len(row) > 14 and row[14] else None
 
             scooters.append(Scooter(
                 id, brand, model, serial_number, top_speed, battery_capacity, soc,
                 soc_range_min, soc_range_max, location_latitude, location_longitude,
-                out_of_service, mileage, last_maintenance_date
+                out_of_service, mileage, last_maintenance_date, in_service_date
             ))
         return scooters
     except sqlite3.Error as e:
@@ -204,11 +214,12 @@ def get_scooter_by_serial_number(serial_number):
         out_of_service = decrypt_message(row[11], key) == 'True'
         mileage = decrypt_message(row[12], key)
         last_maintenance_date = decrypt_message(row[13], key) if row[13] else None
+        in_service_date = decrypt_message(row[14], key) if len(row) > 14 and row[14] else None
 
         return Scooter(
             matched_id, brand, model, serial_number_dec, top_speed, battery_capacity, soc,
             soc_range_min, soc_range_max, location_latitude, location_longitude,
-            out_of_service, mileage, last_maintenance_date
+            out_of_service, mileage, last_maintenance_date, in_service_date
         )
 
     except sqlite3.Error as e:
@@ -245,6 +256,8 @@ def search_scooters_partial(query):
                 full_row = cursor.fetchone()
 
                 if full_row:
+                    in_service_date = decrypt_message(full_row[14], key) if len(full_row) > 14 and full_row[14] else None
+                    
                     scooter = Scooter(
                         id=full_row[0],
                         brand=brand,
@@ -259,7 +272,8 @@ def search_scooters_partial(query):
                         location_longitude=decrypt_message(full_row[10], key),
                         out_of_service=(decrypt_message(full_row[11], key) == "True"),
                         mileage=decrypt_message(full_row[12], key),
-                        last_maintenance_date=decrypt_message(full_row[13], key) if full_row[13] else None
+                        last_maintenance_date=decrypt_message(full_row[13], key) if full_row[13] else None,
+                        in_service_date=in_service_date
                     )
                     results.append(scooter)
 

@@ -1,4 +1,5 @@
 import sys
+import time
 from models.scooter import create_scooter, list_scooters , get_scooter_by_serial_number, delete_scooter, update_scooter, search_scooters_partial
 from security.validation import Validation
 from logs.log import log_instance
@@ -18,33 +19,34 @@ def scooter_menu(current_user):
         number = 1
 
         if is_authorized(current_user.role, 'add_scooter'):
-            print(f"{number}. Add a new scooter")
+            print(f"[{number}] Add a new scooter")
             options[str(number)] = add_scooter
             number += 1
 
         if is_authorized(current_user.role, 'show_scooter'):
-            print(f"{number}. View all scooters")
+            print(f"[{number}] View all scooters")
             options[str(number)] = show_scooters
             number += 1
 
         if is_authorized(current_user.role, 'search_scooter'):
-            print(f"{number}. Search for a scooter")
+            print(f"[{number}] Search for a scooter")
             options[str(number)] = search_scooter
             number += 1
 
         if is_authorized(current_user.role, 'delete_scooter'):
-            print(f"{number}. Delete a scooter")
+            print(f"[{number}] Delete a scooter")
             options[str(number)] = deleting_scooter
             number += 1
 
         if is_authorized(current_user.role, 'update_scooter'):
-            print(f"{number}. Update a scooter")
+            print(f"[{number}] Update a scooter")
             options[str(number)] = update_scooter_controller
             number += 1
 
-        print(f"{number}. Return to previous menu")
-        return_option = str(number)
+        print(f"[0] Return to previous menu")
+        return_option = str(0)
 
+        print("----------------------------------------------------------------------------")
         choice = input("Choose an option: ").strip()
 
         if choice in options:
@@ -54,9 +56,6 @@ def scooter_menu(current_user):
             return
         else:
             print("Invalid choice. Please try again.")
-
-
-
 
 def add_scooter(current_user):
 
@@ -71,10 +70,13 @@ def add_scooter(current_user):
     
     brand = Validation.get_valid_input("Brand: ", Validation.brand_validation, username, "brand")
     model = Validation.get_valid_input("Model: ", Validation.model_validation, username, "model")
+    
     for attempt in range(3):
         serial_number = input("Serial Number (10–17 alphanumeric): ").strip()
+        
         if not Validation.serial_number_validation(serial_number, username):
             continue
+        
         if get_scooter_by_serial_number(serial_number):
             print("Serial number already exists. Please try again.")
             log_instance.log_invalid_input(username, "serial_number", "Attempt to create duplicate serial number")
@@ -152,14 +154,24 @@ def show_scooters(current_user):
     scooters = list_scooters()
     if scooters:
         for s in scooters:
-            lat = float(s.location_latitude)
-            lon = float(s.location_longitude)
-            print(f"{s.brand} {s.model} - Serial: {s.serial_number}, Location: ({s.location_latitude}, {s.location_longitude})")
+            print(f"Brand: {s.brand}")
+            print(f"Model: {s.model}")
+            print(f"Serial Number: {s.serial_number}")
+            print(f"Top Speed: {s.top_speed} km/h")
+            print(f"Battery Capacity: {s.battery_capacity} mAh")
+            print(f"State of Charge: {s.soc}%")
+            print(f"SOC Range: {s.soc_range_min}% - {s.soc_range_max}%")
+            print(f"Location: Latitude {s.location_latitude}, Longitude {s.location_longitude}")
+            print(f"Out of Service: {'Yes' if s.out_of_service else 'No'}")
+            print(f"Mileage: {s.mileage} km")
+            print(f"Last Maintenance Date: {s.last_maintenance_date}")
+            print(f"In Service Date: {s.in_service_date}")
+            print("----------------------------------------------------------------------------")
+            
     else:
         print("No scooters found.")
 
     general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-
 
 def deleting_scooter(current_user):
     require_authorization(current_user, 'delete_scooter')
@@ -208,25 +220,40 @@ def update_scooter_controller(current_user):
         return
 
     for s in scooters:
-        print(f"ID: {s.id} | Brand: {s.brand} | Model: {s.model} | Serial: {s.serial_number}")
+        print(f"ID: {s.id}")
+        print(f"Brand: {s.brand}")
+        print(f"Model: {s.model}")
+        print(f"Serial Number: {s.serial_number}")
+        print(f"Top Speed: {s.top_speed} km/h")
+        print(f"Battery Capacity: {s.battery_capacity} mAh")
+        print(f"State of Charge: {s.soc}%")
+        print(f"SOC Range: {s.soc_range_min}% - {s.soc_range_max}%")
+        print(f"Location: Latitude {s.location_latitude}, Longitude {s.location_longitude}")
+        print(f"Out of Service: {'Yes' if s.out_of_service else 'No'}")
+        print(f"Mileage: {s.mileage} km")
+        print(f"Last Maintenance Date: {s.last_maintenance_date}")
+        print(f"In Service Date: {s.in_service_date}")
+        print("----------------------------------------------------------------------------")
 
     try:
         scooter_id = int(input("\nEnter the ID of the scooter to update: ").strip())
     except ValueError:
-        print("Invalid ID.")
+        print("Invalid ID. Please enter a valid number.")
+        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
 
     # Search the scooter
     target_scooter = next((s for s in scooters if s.id == scooter_id), None)
     if not target_scooter:
         print("Scooter not found.")
+        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
 
     username = current_user.username
 
     allowed_fields_per_role = {
-        'super_administrator': [str(i) for i in range(1, 14)],
-        'system_administrator': [str(i) for i in range(1, 14)],
+        'super_administrator': [str(i) for i in range(1, 15)],
+        'system_administrator': [str(i) for i in range(1, 15)],
         'service_engineer': ['3', '4','5', '6', '7', '8', '9', '10', '11', '12'],
     }
 
@@ -244,6 +271,7 @@ def update_scooter_controller(current_user):
         '11': ('mileage', "Mileage", Validation.mileage_validation),
         '12': ('last_maintenance_date', "Last Maintenance Date (YYYY-MM-DD)", Validation.last_maintenance_date_validation),
         '13' : ('serial_number', "Serial Number (10–17 alphanumeric)", Validation.serial_number_validation),
+        '14': ('in_service_date', "In Service Date (YYYY-MM-DD)", Validation.last_maintenance_date_validation),
     }
 
     # give the user a choice of fields to update
@@ -251,18 +279,20 @@ def update_scooter_controller(current_user):
     print("\nWhich field do you want to update?")
     for key in allowed:
         label = field_map[key][1]
-        print(f"{key}. {label}")
-    print("0. Cancel")
+        print(f"[{key}] {label}")
+    print("[0] Cancel")
 
     choice = input("Choose a number: ").strip()
 
     if choice == '0':
         print("Update cancelled.")
+        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
 
     if choice not in allowed:
         print("You are not authorized to update this field.")
         log_instance.addlog(username, "Unauthorized scooter field update", f"Field {choice}", True)
+        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
 
     field_key, label, validator = field_map[choice]
@@ -301,38 +331,44 @@ def update_scooter_controller(current_user):
                 continue
             
             valid_serial = True
-    else:
-        # For other fields, just get the input once
-        new_value = input(f"Enter new value for {label}: ").strip()
+    # For other fields, just get the input once
+    new_value = input(f"Enter new value for {label}: ").strip()
 
-    # SOC-range specific validation
+    # Basic validation first
+    if not validator(new_value, username):
+        print(f"Invalid {label}. Update cancelled.")
+        log_instance.log_invalid_input(username, field_key, f"Update validation failed")
+        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+        return
+
+    # SOC-range specific validation (after basic validation)
     if choice in ['6', '7']:
         if not new_value.isdigit() or not (0 <= int(new_value) <= 100):
             print("SOC range must be between 0 and 100.")
+            general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
             return
         if choice == '6':  # Min
             soc_max = int(target_scooter.soc_range_max)
             if int(new_value) >= soc_max:
                 print(f"SOC Range Min must be less than SOC Range Max ({soc_max}).")
+                general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
                 return
         elif choice == '7':  # Max
             soc_min = int(target_scooter.soc_range_min)
             if int(new_value) <= soc_min:
                 print(f"SOC Range Max must be greater than SOC Range Min ({soc_min}).")
+                general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
                 return
 
-    # Locatie validation
+    # Location validation
     if choice == '8':
         if not Validation.location_validation(new_value, target_scooter.location_longitude, username):
+            general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
             return
     elif choice == '9':
         if not Validation.location_validation(target_scooter.location_latitude, new_value, username):
+            general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
             return
-
-    if not validator(new_value, username):
-        print(f"Invalid {label}. Update cancelled.")
-        log_instance.log_invalid_input(username, field_key, f"Update validation failed")
-        return
 
     # Convert
     if field_key == 'out_of_service':
@@ -360,18 +396,32 @@ def search_scooter(current_user):
     print("----------------------------------------------------------------------------")
 
     query = Validation.get_valid_input(
-        prompt="Enter a part of a brand/ model or serialnumber: ",
+        prompt="Enter a part of a brand/model or serialnumber: ",
         validation_fn=Validation.is_valid_search_input, 
         username=current_user.username,
         field_name="search scooter"
     )
     
     result = search_scooters_partial(query)
+    number_of_results = len(result) if result else 0
 
     if result:
-        print("\n--- Search Results ---")
-        for scooter in result:
-            print(f"Brand: {scooter.brand}, Model: {scooter.model}, Serial Number: {scooter.serial_number}")
+        general_methods.clear_console()
+        print(f"\n--- {number_of_results} scooter(s) found ---")
+        for s in result:
+            print(f"Brand: {s.brand}")
+            print(f"Model: {s.model}")
+            print(f"Serial Number: {s.serial_number}")
+            print(f"Top Speed: {s.top_speed} km/h")
+            print(f"Battery Capacity: {s.battery_capacity} mAh")
+            print(f"State of Charge: {s.soc}%")
+            print(f"SOC Range: {s.soc_range_min}% - {s.soc_range_max}%")
+            print(f"Location: Latitude {s.location_latitude}, Longitude {s.location_longitude}")
+            print(f"Out of Service: {'Yes' if s.out_of_service else 'No'}")
+            print(f"Mileage: {s.mileage} km")
+            print(f"Last Maintenance Date: {s.last_maintenance_date}")
+            print(f"In Service Date: {s.in_service_date}")
+            print("----------------------------------------------------------------------------")
             log_instance.addlog(current_user.username, "Scooter search", query, False)
     else:
         print("No matching scooters found.")
