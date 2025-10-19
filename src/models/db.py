@@ -74,11 +74,18 @@ def initialize_database():
             location_longitude REAL NOT NULL,
             out_of_service BOOLEAN NOT NULL DEFAULT 0,
             mileage INTEGER NOT NULL DEFAULT 0,
-            last_maintenance_date DATE NOT NULL
-        
-            
+            last_maintenance_date DATE NOT NULL,
+            in_service_date DATE NOT NULL
         )
     ''')
+    
+    # Add migration for existing databases that don't have in_service_date column
+    try:
+        cursor.execute('ALTER TABLE scooters ADD COLUMN in_service_date DATE')
+        print("Added in_service_date column to existing scooters table")
+    except sqlite3.OperationalError:
+        # Column already exists, ignore the error
+        pass
     
     # Table: logs
     cursor.execute('''
