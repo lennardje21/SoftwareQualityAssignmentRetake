@@ -188,7 +188,7 @@ def show_all_users(current_user):
     require_authorization(current_user, 'view_users')
     general_methods.clear_console()
     print("----------------------------------------------------------------------------")
-    print("|" + "Creating a new user".center(75) + "|")
+    print("|" + "Show all users".center(75) + "|")
     print("----------------------------------------------------------------------------")
 
     users = list_users()
@@ -229,9 +229,6 @@ def get_deletable_users(current_user):
         elif user.role == "service_engineer" and current_user.role in ["system_administrator", "super_administrator"]:
             deletable.append(user)
 
-        if user.role == "1":
-            deletable.append(user)
-
     return deletable
 
 def delete_user_account(current_user):
@@ -250,33 +247,38 @@ def delete_user_account(current_user):
     for user in deletable_users:
         print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
-    try:
+
+    while True:
         target_id_str = Validation.get_valid_input(
             prompt="\nEnter the ID of the user you want to delete: ",
             validation_fn=Validation.get_valid_id_input,
-            username=current_user,
+            username=current_user.username,
             field_name="id"
         )
-
+        if target_id_str.lower() == 'cancel':
+            print("Operation cancelled.")
+            return
         target_id = int(target_id_str)
-    except ValueError:
-        print("Invalid input: ID must be a number.")
-        log_instance.log_invalid_input(current_user.username, "user_id", "Invalid ID input for deletion", True)
-        return
+        target_user = next((u for u in deletable_users if u.id == target_id), None)
+        if not target_user:
+            print("Invalid input. Please try again.")
+            continue
+        break
 
-    target_user = next((u for u in deletable_users if u.id == target_id), None)
-    if not target_user:
-        print("You are not allowed to delete this user or user does not exist.")
-        return
-
-    confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no): ").strip().lower()
-    if confirmation != "yes":
-        print("Cancelled.")
+    confirmation = Validation.get_valid_input(
+        prompt=f"Are you sure you want to delete '{target_user.username}'? (yes/no): ",
+        validation_fn=Validation.yes_no_validation,
+        username=current_user.username,
+        field_name="confirmation"
+    )
+    
+    if confirmation.lower() != "yes":
+        print("Deletion cancelled.")
         return
 
     success = delete_user_by_id(target_id)
     if success:
-        print(f" User '{target_user.username}' deleted successfully.")
+        print(f"User '{target_user.username}' deleted successfully.")
         log_instance.addlog(current_user.username, "User deleted", target_user.username, False)
     else:
         print("Failed to delete user.")
@@ -321,16 +323,28 @@ def update_user_account(current_user):
     for user in editable_users:
         print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} Role: {user.role}")
 
-    try:
-        target_id = int(input("\nEnter the ID of the user to update: ").strip())
-    except ValueError:
-        print("Invalid ID.")
-        return
-
-    target_user = next((u for u in editable_users if u.id == target_id), None)
-    if not target_user:
-        print("User not found or not editable by your role.")
-        return
+    # Create a whitelist of valid user IDs
+    valid_ids = [str(user.id) for user in editable_users]
+    
+    while True:
+        target_id_str = input("\nEnter the ID of the user to update (or 'cancel' to go back): ").strip().lower()
+        
+        if target_id_str == 'cancel':
+            print("Operation cancelled.")
+            return
+            
+        if target_id_str not in valid_ids:
+            print("Invalid user ID. Please select from the list above.")
+            log_instance.log_invalid_input(current_user.username, "user_id", "Invalid ID input for update", True)
+            continue
+        
+        target_id = int(target_id_str)
+        target_user = next((u for u in editable_users if u.id == target_id), None)
+        
+        if target_user:
+            break
+        else:
+            print("User not found. Please try again.")
 
     print("\nWhich field do you want to update?")
     print("1. Username")
@@ -427,9 +441,12 @@ def change_own_password(current_user) -> bool:
         print("Password change failed. You are now logged out.")
         return False
     
-#TODO: Check for the required role permissions before allowing password reset
 def reset_user_password(current_user):
-    print("\n--- Reset User Password ---")
+    require_authorization(current_user, 'reset_password')
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Reset User Password".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     editable_users = get_editable_users(current_user)
     if not editable_users:
@@ -439,16 +456,28 @@ def reset_user_password(current_user):
     for user in editable_users:
         print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
-    try:
-        target_id = int(input("\nEnter the ID of the user to reset password: ").strip())
-    except ValueError:
-        print("Invalid ID.")
-        return
-
-    target_user = next((u for u in editable_users if u.id == target_id), None)
-    if not target_user:
-        print("User not found or not editable by your role.")
-        return
+    # Create a whitelist of valid user IDs
+    valid_ids = [str(user.id) for user in editable_users]
+    
+    while True:
+        target_id_str = input("\nEnter the ID of the user to reset password (or 'cancel' to go back): ").strip().lower()
+        
+        if target_id_str == 'cancel':
+            print("Operation cancelled.")
+            return
+            
+        if target_id_str not in valid_ids:
+            print("Invalid user ID. Please select from the list above.")
+            log_instance.log_invalid_input(current_user.username, "user_id", "Invalid ID input for password reset", True)
+            continue
+        
+        target_id = int(target_id_str)
+        target_user = next((u for u in editable_users if u.id == target_id), None)
+        
+        if target_user:
+            break
+        else:
+            print("User not found. Please try again.")
 
     # Nieuw wachtwoord vragen en valideren
     new_pw = Validation.get_valid_input(
