@@ -248,9 +248,12 @@ def delete_user_account(current_user):
         print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
 
+    # Create a whitelist of valid user IDs
+    valid_ids = [str(user.id) for user in deletable_users]
+    
     while True:
         target_id_str = Validation.get_valid_input(
-            prompt="\nEnter the ID of the user you want to delete: ",
+            prompt="\nEnter the ID of the user you want to delete (or 'cancel' to go back): ",
             validation_fn=Validation.get_valid_id_input,
             username=current_user.username,
             field_name="id"
@@ -258,10 +261,16 @@ def delete_user_account(current_user):
         if target_id_str.lower() == 'cancel':
             print("Operation cancelled.")
             return
+            
+        # First check if it's in our whitelist
+        if target_id_str not in valid_ids:
+            print("This ID is not in the list of users you can delete. Please choose from the IDs shown above.")
+            continue
+            
         target_id = int(target_id_str)
         target_user = next((u for u in deletable_users if u.id == target_id), None)
         if not target_user:
-            print("Invalid input. Please try again.")
+            print("Could not find the specified user. Please try again.")
             continue
         break
 
