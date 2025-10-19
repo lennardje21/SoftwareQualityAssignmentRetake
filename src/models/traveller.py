@@ -180,7 +180,16 @@ def update_traveller(customer_id, fields: dict):
     cursor = conn.cursor()
     key = load_symmetric_key()
 
+    # Whitelist of allowed field names to prevent SQL injection
+    ALLOWED_FIELDS = {'first_name', 'last_name', 'date_of_birth', 'gender', 'streetname', 
+                      'house_number', 'zip_code', 'city', 'email', 'phone_number', 'license_number'}
+
     try:
+        # Validate all field names against whitelist
+        if not all(field_name in ALLOWED_FIELDS for field_name in fields.keys()):
+            print("Invalid field name detected.")
+            return False
+
         encrypted_fields = {}
 
         for field_name, field_value in fields.items():
@@ -189,15 +198,21 @@ def update_traveller(customer_id, fields: dict):
             else:
                 encrypted_fields[field_name] = field_value
 
-        set_clause = ', '.join(f"{key} = ?" for key in fields.keys())
-        values = list(encrypted_fields.values())
+        # Build the query using explicit placeholders - no f-strings
+        # Create a list of "field_name = ?" for each field
+        updates = []
+        values = []
+        
+        for field_name in fields.keys():
+            updates.append(f"{field_name} = ?")
+            values.append(encrypted_fields[field_name])
+        
         values.append(customer_id)
-
-        cursor.execute(f'''
-            UPDATE travellers
-            SET {set_clause}
-            WHERE id = ?
-        ''', values)
+        
+        # Join the updates safely
+        query = "UPDATE travellers SET " + ", ".join(updates) + " WHERE id = ?"
+        
+        cursor.execute(query, values)
         conn.commit()
         return True
     except sqlite3.Error as e:
