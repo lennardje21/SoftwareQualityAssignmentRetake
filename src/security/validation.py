@@ -1,5 +1,4 @@
 import re
-import sys
 from logs.log import log_instance
 from datetime import datetime
 
@@ -16,31 +15,22 @@ class Validation:
 
     @staticmethod
     def get_valid_input(prompt, validation_fn, username, field_name):
-        attempts = 0
-        while attempts < 3:
+        while True:
             value = input(prompt).strip()
             if validation_fn(value, username):
                 return value
-            attempts += 1
             log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
             print(f"Invalid {field_name}. Please try again.")
-        log_instance.log_invalid_input(username, field_name, f"Too many invalid {field_name} attempts", True)
-        print("Too many failed attempts. You have been logged out.")
-        sys.exit()
 
     @staticmethod
     def get_valid_range_input(prompt_min, prompt_max, validation_fn, username, field_name):
-        attempts = 0
-        while attempts < 3:
+        while True:
             min_value = input(prompt_min).strip()
             max_value = input(prompt_max).strip()
             if validation_fn(min_value, max_value, username):
                 return min_value, max_value
-            attempts += 1
             log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input: {min_value}-{max_value}")
             print(f"Invalid {field_name}. Please try again.")
-        print("Too many failed attempts. You have been logged out.")
-        sys.exit()
 
     @staticmethod
     def is_valid_search_input(query: str, username) -> bool:
@@ -52,17 +42,13 @@ class Validation:
     
     @staticmethod
     def get_valid_coordinates(prompt_lat, prompt_lon, validation_fn, username):
-        attempts = 0
-        while attempts < 3:
+        while True:
             lat_input = input(prompt_lat).strip()
             lon_input = input(prompt_lon).strip()
             if validation_fn(lat_input, lon_input, username):
                 return lat_input, lon_input
-            attempts += 1
             log_instance.log_invalid_input(username, "location", f"Invalid coordinates: {lat_input}, {lon_input}")
             print("Invalid location. Please try again.")
-        print("Too many failed attempts. You have been logged out.")
-        sys.exit()
 
     @staticmethod
     def get_valid_id_input(id: str, username: str):
