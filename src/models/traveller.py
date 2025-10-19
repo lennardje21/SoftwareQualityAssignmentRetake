@@ -204,7 +204,7 @@ def update_traveller(customer_id, fields: dict):
         values = []
         
         for field_name in fields.keys():
-            updates.append(f"{field_name} = ?")
+            updates.append(field_name + " = ?")
             values.append(encrypted_fields[field_name])
         
         values.append(customer_id)
