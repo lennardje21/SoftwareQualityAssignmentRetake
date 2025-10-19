@@ -84,7 +84,7 @@ class Validation:
     
     @staticmethod
     def username_validation(username):
-        if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{8,10}$", username):
+        if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{7,9}$", username):
             return True
         print("Username is not valid")
         log_instance.log_invalid_input(username, "username", "Username must be 8-10 characters long and can only contain letters, numbers, and underscores")
