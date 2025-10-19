@@ -21,7 +21,7 @@ def is_authorized(role: str, action: str) -> bool:
             # all roles for a service engineer
             "update_scooter", "search_scooter", "update_own_password", "show_scooter",
             # traveller management
-            "add_traveller", "update_traveller", "delete_traveller", "search_traveller","show_traveller"
+            "add_traveller", "update_traveller", "delete_traveller", "search_traveller", "show_traveller",
             # scooter management
             "add_scooter", "update_scooter", "delete_scooter",
             # user management (service engineers)
