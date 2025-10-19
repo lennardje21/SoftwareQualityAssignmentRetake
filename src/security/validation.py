@@ -36,7 +36,7 @@ class Validation:
     def is_valid_search_input(query: str, username) -> bool:
         if re.fullmatch(r"[A-Za-z0-9]{3,20}", query):
             return True
-        print("Search query is not valid (3-20 alphanumeric characters)")
+        print("Invalid search query (3-20 characters)")
         log_instance.log_invalid_input(username, "search", "Search query must be 3-20 alphanumeric characters")
         return False
     
@@ -99,7 +99,7 @@ class Validation:
             except Exception as e:
                 log_instance.log_invalid_input(username, "date_of_birth", f"Invalid date object: {e}")
 
-        print("Birthday is not valid (must be real, in the past, and max 120 years ago)")
+        print("Invalid birthday (format: YYYY-MM-DD, age: 16-120)")
         log_instance.log_invalid_input(username, "date_of_birth", "Invalid format or out of range")
         return False
         
@@ -115,7 +115,7 @@ class Validation:
     # Geen rare tekens @#$, begin met hoofdletter, geen lege string, geef het een max size
     @staticmethod
     def street_validation(street, username):
-        if re.fullmatch(r"[a-zA-Z][a-zA-Z\s\-]{1,49}", street):
+        if re.fullmatch(r"[a-zA-Z][a-zA-Z0-9\s\-\.']{1,49}", street):
             return True
         print("Street name is not valid")
         log_instance.log_invalid_input(username, "street", "Street name is empty or invalid")
@@ -140,10 +140,10 @@ class Validation:
     
     @staticmethod
     def phone_validation(phone, username):
-        if re.fullmatch(r"\d{8}$", phone):
+        if re.fullmatch(r"\d{8}", phone):
             return True
-        print("Phone number is not valid (expected +31-6-xxxxxxxx)")
-        log_instance.log_invalid_input(username, "phone", "Phone number must be +31-6-XXXXXXXX")
+        print("Phone number is not valid (enter only the 8 digits)")
+        log_instance.log_invalid_input(username, "phone", "Phone number must be 8 digits")
         return False
     
     @staticmethod
@@ -168,14 +168,14 @@ class Validation:
     def license_validation(license_number, username):
         if re.fullmatch(r"[A-Z]{1,2}\d{7}", license_number):
             return True
-        print("License number is not valid (format: XX1234567 or X1234567)")
+        print("Invalid license number (format: X1234567 or XX1234567)")
         log_instance.log_invalid_input(username, "license", "License number format is incorrect")
         return False
 
     #NOTE: Controleer hoeft niet perse te beginnen met een hoofletter maar mag wel, pas aan
     @staticmethod
     def brand_validation(brand, username):
-        if re.fullmatch(r"[A-Za-z][a-zA-Z\- ]{1,29}", brand):
+        if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\- ]{1,29}", brand):
             return True
         print("Brand name is not valid")
         log_instance.log_invalid_input(username, "brand", "Brand name is empty or invalid")
@@ -184,7 +184,7 @@ class Validation:
     #NOTE: Controleer ook op size, en waar hij aan mag voldoen
     @staticmethod
     def model_validation(model, username):
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_\-]{1,29}", model):
+        if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-\s]{1,29}", model):
             return True
         print("Model name is not valid")
         log_instance.log_invalid_input(username, "model", "Model name is empty or invalid")
@@ -194,7 +194,7 @@ class Validation:
     def serial_number_validation(serial_number, username):
         if re.fullmatch(r"[A-Za-z0-9]{10,17}$", serial_number):
             return True
-        print("Serial number is not valid (10-17 alphanumeric characters)")
+        print("Invalid serial number (10-17 characters)")
         log_instance.log_invalid_input(username, "serial number", "Serial number must be 10-17 alphanumeric characters")
         return False
     
@@ -205,7 +205,7 @@ class Validation:
             value = int(top_speed)
             if 1 <= value <= 300:
                 return True
-        print("Top speed must be a number between 1 and 300 without leading zeros.")
+        print("Invalid top speed (1-300 km/h)")
         log_instance.log_invalid_input(username, "top speed", "Invalid format or range (1–300, no leading zeros)", False)
         return False
     
@@ -215,7 +215,7 @@ class Validation:
             value = int(battery_capacity)
             if 50 <= value <= 2000:
                 return True
-        print("Battery capacity must be a positive integer between 50 and 2000")
+        print("Invalid battery capacity (50-2000)")
         log_instance.log_invalid_input(username, "battery capacity", "Battery capacity must be a positive integer between 50 and 2000", False)
         return False
     
@@ -226,7 +226,7 @@ class Validation:
             val = int(value)
             if 0 <= val <= 100:
                 return True
-        print("SOC must be between 0 and 100.")
+        print("Invalid SOC value (0-100%)")
         log_instance.log_invalid_input(username, "SOC", "Invalid SOC value", False)
         return False
 
@@ -237,7 +237,7 @@ class Validation:
             max_val = int(max)
             if 0 <= min_val <= 100 and 0 <= max_val <= 100 and min_val < max_val:
                 return True
-        print("SOC range must be two numbers between 0 and 100 with min < max")
+        print("Invalid SOC range (min-max, 0-100%)")
         log_instance.log_invalid_input(username, "SOC range", "SOC range must be two numbers between 0 and 100 with min < max", False)
         return False
         
@@ -254,7 +254,7 @@ class Validation:
             except ValueError:
                 pass
 
-        print("Location must be within Rotterdam (lat: 51.85000–52.05000, lng: 4.40000–4.55000), 5 decimal places only.")
+        print("Invalid coordinates (lat: 51.85000-52.05000, lng: 4.40000-4.55000, exactly 5 decimal places)")
         log_instance.log_invalid_input(username, "location", "Invalid GPS coordinates for Rotterdam with required precision")
         return False
         
@@ -270,7 +270,7 @@ class Validation:
     def last_maintenance_date_validation(last_maintenance_date, username):
         if re.fullmatch(r"^\d{4}-\d{2}-\d{2}$", last_maintenance_date):
             return True
-        print("Last maintenance date is not valid (expected format: YYYY-MM-DD)")
+        print("Invalid maintenance date (format: YYYY-MM-DD)")
         log_instance.log_invalid_input(username, "last maintenance date", "Use format YYYY-MM-DD")
         return False
     
