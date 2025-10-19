@@ -82,7 +82,7 @@ class LogFunction():
                 return
                 
             print("\n--- System Logs ---")
-            print(f"{'ID':<5} {'Date':<20} {'Username':<15} {'Action':<35} {'Details':<35} {'Suspicious':<10}")
+            print(f"{'ID':<5} {'Date':<20} {'Username':<15} {'Action':<35} {'Details':<50} {'Suspicious':<10}")
             print("-" * 132)
             
             for row in rows:
