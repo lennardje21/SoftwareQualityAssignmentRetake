@@ -2,7 +2,7 @@ from datetime import datetime
 import sqlite3
 import os
 from security.encryption import load_symmetric_key, encrypt_message, decrypt_message
-
+from helpers.general_methods import general_methods
 
 
 class LogFunction():
@@ -83,7 +83,7 @@ class LogFunction():
                 
             print("\n--- System Logs ---")
             print(f"{'ID':<5} {'Date':<20} {'Username':<15} {'Action':<35} {'Details':<35} {'Suspicious':<10}")
-            print("-" * 100)
+            print("-" * 132)
             
             for row in rows:
                 log_id = row[0]
@@ -105,8 +105,9 @@ class LogFunction():
 
                 print(f"{log_id:<5} {date:<20} {username:<15} {action:<35} {details:<50} {suspicious:<10}")
 
-            print("-" * 100)
-            
+            print("-" * 132)
+            general_methods.hidden_input("\nPress Enter to return to the menu...")
+
         except Exception as e:
             print(f"An error occurred while retrieving logs: {e}")
         finally:
