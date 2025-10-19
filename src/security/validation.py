@@ -87,7 +87,7 @@ class Validation:
         if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{7,9}$", username):
             return True
         print("Username is not valid")
-        log_instance.log_invalid_input(username, "username", "Username must be 8-10 characters long and can only contain letters, numbers, and underscores")
+        log_instance.log_invalid_input(username, "username", "Username must be 8–10 characters, start with a letter or underscore, and may contain letters, numbers, underscores, apostrophes, and periods.")
         return False
     
     @staticmethod
