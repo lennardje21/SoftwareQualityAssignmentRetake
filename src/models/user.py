@@ -221,7 +221,7 @@ def update_user_by_id(user_id, fields):
         
         values.append(user_id)
         
-        query = "UPDATE users SET " + ", ".join(updates) + " WHERE id = ?"
+        query = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
         
         cursor.execute(query, values)
         
