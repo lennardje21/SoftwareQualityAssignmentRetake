@@ -56,6 +56,7 @@ def scooter_menu(current_user):
             return
         else:
             print("Invalid choice. Please try again.")
+            time.sleep(1)
 
 def add_scooter(current_user):
 
@@ -242,7 +243,7 @@ def update_scooter_controller(current_user):
         print("Invalid ID. Please enter a valid number.")
         general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
-
+    general_methods.clear_console()
     # Search the scooter
     target_scooter = next((s for s in scooters if s.id == scooter_id), None)
     if not target_scooter:
@@ -332,52 +333,53 @@ def update_scooter_controller(current_user):
                 continue
             
             valid_serial = True
-    # For other fields, just get the input once
-    new_value = input(f"Enter new value for {label}: ").strip()
+    else:
+        # For other fields, just get the input once
+        new_value = input(f"Enter new value for {label}: ").strip()
 
-    # Basic validation first
-    if not validator(new_value, username):
-        print(f"Invalid {label}. Update cancelled.")
-        log_instance.log_invalid_input(username, field_key, f"Update validation failed")
-        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-        return
-
-    # SOC-range specific validation (after basic validation)
-    if choice in ['6', '7']:
-        if not new_value.isdigit() or not (0 <= int(new_value) <= 100):
-            print("SOC range must be between 0 and 100.")
+        # Basic validation first
+        if not validator(new_value, username):
+            print(f"Invalid {label}. Update cancelled.")
+            log_instance.log_invalid_input(username, field_key, f"Update validation failed")
             general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
             return
-        if choice == '6':  # Min
-            soc_max = int(target_scooter.soc_range_max)
-            if int(new_value) >= soc_max:
-                print(f"SOC Range Min must be less than SOC Range Max ({soc_max}).")
+
+        # SOC-range specific validation (after basic validation)
+        if choice in ['6', '7']:
+            if not new_value.isdigit() or not (0 <= int(new_value) <= 100):
+                print("SOC range must be between 0 and 100.")
                 general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
                 return
-        elif choice == '7':  # Max
-            soc_min = int(target_scooter.soc_range_min)
-            if int(new_value) <= soc_min:
-                print(f"SOC Range Max must be greater than SOC Range Min ({soc_min}).")
+            if choice == '6':  # Min
+                soc_max = int(target_scooter.soc_range_max)
+                if int(new_value) >= soc_max:
+                    print(f"SOC Range Min must be less than SOC Range Max ({soc_max}).")
+                    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+                    return
+            elif choice == '7':  # Max
+                soc_min = int(target_scooter.soc_range_min)
+                if int(new_value) <= soc_min:
+                    print(f"SOC Range Max must be greater than SOC Range Min ({soc_min}).")
+                    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+                    return
+
+        # Location validation
+        if choice == '8':
+            if not Validation.location_validation(new_value, target_scooter.location_longitude, username):
+                general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+                return
+        elif choice == '9':
+            if not Validation.location_validation(target_scooter.location_latitude, new_value, username):
                 general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
                 return
 
-    # Location validation
-    if choice == '8':
-        if not Validation.location_validation(new_value, target_scooter.location_longitude, username):
-            general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-            return
-    elif choice == '9':
-        if not Validation.location_validation(target_scooter.location_latitude, new_value, username):
-            general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-            return
-
-    # Convert
-    if field_key == 'out_of_service':
-        new_value = new_value.lower() == 'yes'
-    elif field_key in ['top_speed', 'battery_capacity', 'soc', 'soc_range_min', 'soc_range_max', 'mileage']:
-        new_value = int(new_value)
-    elif field_key in ['location_latitude', 'location_longitude']:
-        new_value = float(new_value)
+        # Convert
+        if field_key == 'out_of_service':
+            new_value = new_value.lower() == 'yes'
+        elif field_key in ['top_speed', 'battery_capacity', 'soc', 'soc_range_min', 'soc_range_max', 'mileage']:
+            new_value = int(new_value)
+        elif field_key in ['location_latitude', 'location_longitude']:
+            new_value = float(new_value)
 
     # Update the scooter
     if update_scooter(scooter_id, {field_key: new_value}):
@@ -410,6 +412,7 @@ def search_scooter(current_user):
         general_methods.clear_console()
         print(f"\n--- {number_of_results} scooter(s) found ---")
         for s in result:
+            print(f"ID: {s.id}")
             print(f"Brand: {s.brand}")
             print(f"Model: {s.model}")
             print(f"Serial Number: {s.serial_number}")
