@@ -316,7 +316,7 @@ def update_user_account(current_user):
         return
 
     for user in editable_users:
-        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} Role: {user.role}")
+        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} | Role: {user.role}")
 
     try:
         target_id = int(input("\nEnter the ID of the user to update: ").strip())
