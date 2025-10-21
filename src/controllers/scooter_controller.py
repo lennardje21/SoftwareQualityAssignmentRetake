@@ -183,7 +183,7 @@ def deleting_scooter(current_user):
     key = load_symmetric_key()
     
     serial_number = Validation.get_valid_input(
-        "Enter the serial number of the scooter to delete: ",
+        "Enter the serial number of the scooter to delete or cancel: ",
         Validation.serial_number_validation,
         current_user.username,
         "serial_number"
@@ -191,16 +191,17 @@ def deleting_scooter(current_user):
 
     scooter = get_scooter_by_serial_number(serial_number)
     
-    if scooter:
-        confirmation = input(f"Are you sure you want to delete scooter {scooter.serial_number}? (yes/no): ").strip().lower()
-        if confirmation == 'yes':
-            delete_scooter(serial_number)
-            print(f"Scooter {scooter.serial_number} deleted successfully.")
-            log_instance.addlog(current_user.username, "Scooter deleted", serial_number, False)
+    if serial_number is not None:
+        if scooter:
+            confirmation = input(f"Are you sure you want to delete scooter {scooter.serial_number}? (yes/no): ").strip().lower()
+            if confirmation == 'yes':
+                delete_scooter(serial_number)
+                print(f"Scooter {scooter.serial_number} deleted successfully.")
+                log_instance.addlog(current_user.username, "Scooter deleted", serial_number, False)
+            else:
+                print("Deletion cancelled.")
         else:
-            print("Deletion cancelled.")
-    else:
-        print("Scooter not found.")
+            print("Scooter not found.")
 
     general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
 
