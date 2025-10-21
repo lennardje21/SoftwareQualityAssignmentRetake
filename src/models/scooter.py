@@ -164,7 +164,11 @@ def update_scooter(scooter_id, fields: dict):
     try:
         # Validate all field names against the predefined mapping
         if not all(field_name in FIELD_COLUMN_MAPPING for field_name in fields.keys()):
-            print("Invalid field name detected.")
+            invalid_fields = [field_name for field_name in fields.keys() if field_name not in FIELD_COLUMN_MAPPING]
+            log_instance.warning(
+                f"SQL injection attempt or invalid field(s) detected in update_scooter. "
+                f"Invalid fields: {invalid_fields}, scooter_id: {scooter_id}, timestamp: {datetime.now().isoformat()}"
+            )
             return False
 
         encrypted_fields = {}
