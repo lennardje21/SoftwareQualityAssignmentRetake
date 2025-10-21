@@ -1,3 +1,22 @@
+# Standard library imports
+import os
+import sys
+import shutil
+import sqlite3
+import random
+import string
+import zipfile
+from datetime import datetime
+
+# Local application imports
+from controllers.rolecheck import is_authorized
+from helpers.general_methods import general_methods
+from logs.log import log_instance
+from models.db import open_connection
+from security.encryption import load_symmetric_key, encrypt_message, decrypt_message
+from security.validation import Validation
+
+
 class BackupManager:
     """Class to manage backup operations for the Urban Mobility database."""
 
@@ -7,8 +26,6 @@ class BackupManager:
 
     @staticmethod
     def get_paths():
-        import os
-
         """Helper to get common paths."""
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         db_path = os.path.join(base_dir, 'data', 'urban_mobility.db')
@@ -18,9 +35,6 @@ class BackupManager:
     @staticmethod
     def extract_db_from_zip(zip_path, target_path, current_user=None):
         """Extract database from zip file."""
-        import zipfile
-        import shutil
-        from logs.log import log_instance
 
         try:
             with zipfile.ZipFile(zip_path, 'r') as zipf:
@@ -46,11 +60,6 @@ class BackupManager:
 
     def create_backup(current_user):
         """Create a backup of the database."""
-        import os
-        import zipfile
-        from datetime import datetime
-        from controllers.rolecheck import is_authorized
-        from logs.log import log_instance
 
         if not is_authorized(current_user.role, 'create_backup'):
                 print("You do not have permission to create backups.")
@@ -88,8 +97,6 @@ class BackupManager:
 
     def generate_unique_restore_code():
         """Generate a unique restore code."""
-        import random
-        import string
 
         # Generate a random code of 8 characters (letters and digits)
         code_length = 8
@@ -103,14 +110,6 @@ class BackupManager:
         This function is intended to be used by a super administrator.
         It allows the super admin to select a system admin and generate a unique restore code for them"""
 
-        from controllers.rolecheck import is_authorized
-        import sqlite3
-        import os
-        from security.encryption import load_symmetric_key, encrypt_message, decrypt_message
-        from logs.log import log_instance
-        from security.validation import Validation
-        import sys
-
         if not is_authorized(current_user.role, 'link_backup_restore_code'):
             print("You do not have permission to generate backup restore codes.")
             return
@@ -119,7 +118,7 @@ class BackupManager:
         base_dir, db_path, backup_dir = BackupManager.get_paths()
 
         # Show a list of system admins to choose from
-        conn = sqlite3.connect('data/urban_mobility.db')
+        conn = open_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, username, role FROM users")
         all_users = cursor.fetchall()
@@ -250,6 +249,7 @@ class BackupManager:
             print(f"This code has been linked to administrator: {selected_admin_name}")
             print(f"For backup file: {selected_backup}")
             print("\nIMPORTANT: Share this code securely with the administrator.")
+            general_methods.hidden_input("\nPress Enter to return to the user menu...")
             
             log_instance.addlog(
                 current_user.username, 
@@ -263,18 +263,8 @@ class BackupManager:
         finally:
             conn.close()
 
-
     def system_administrator_restore_backup(current_user):
         """Restore the database from a previous backup using a restore code."""
-        from controllers.rolecheck import is_authorized
-        import sqlite3
-        import os
-        import sys
-        import shutil
-        from security.encryption import load_symmetric_key, encrypt_message, decrypt_message
-        from logs.log import log_instance
-        from security.validation import Validation
-
 
         if not is_authorized(current_user.role, 'system_administrator_restore_backup'):
             print("You do not have permission to restore backups.")
@@ -302,7 +292,7 @@ class BackupManager:
                 return
             
             # Connect to database and get all restore codes
-            conn = sqlite3.connect(db_path)
+            conn = open_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT id, code, system_admin_id, backup_filename FROM restore_codes")
             all_restore_codes = cursor.fetchall()
@@ -353,7 +343,6 @@ class BackupManager:
         # Ask for confirmation before restoring the backup
         print("\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
         print("You will need to log in again after the restore process is complete.")
-        confirm = input(f"WARNING: This will replace the current database with the backup from {backup_filename}.\nAll current data will be lost. Continue? (y/n): ")
         
         while not confirmation_received and confirm_attempts < MAX_CONFIRM_ATTEMPTS:
             confirm = input(f"WARNING: This will replace the current database with the backup from {backup_filename}.\nAll current data will be lost. Continue? (y/n): ")
@@ -394,13 +383,12 @@ class BackupManager:
                 shutil.copy2(backup_path, db_path)
 
             # Remove the restore code after use
-            conn = sqlite3.connect(db_path)  # Use the path from the helper
+            conn = open_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM restore_codes WHERE id = ?", (matching_restore_code,))
             conn.commit()
             conn.close()
 
-            print(f"Database successfully restored from {backup_filename}.")
             print("\nYou are now being logged out for security reasons.")
             print("Please restart the application and log in again.")
             sys.exit(0)  # Close the application successfully
@@ -412,10 +400,6 @@ class BackupManager:
 
     def check_for_restore_code(current_user):
         """Check if the current user has a restore code linked to their account."""
-        from controllers.rolecheck import is_authorized
-        import sqlite3
-        import os
-        from security.encryption import load_symmetric_key, decrypt_message
         
         if not is_authorized(current_user.role, 'check_for_restore_code'):
             print("You do not have permission to check for restore codes.")
@@ -424,7 +408,7 @@ class BackupManager:
         base_dir, db_path, backup_dir = BackupManager.get_paths()
         key = load_symmetric_key()
         
-        conn = sqlite3.connect('data/urban_mobility.db')
+        conn = open_connection()
         cursor = conn.cursor()
 
         # Query for all restore codes linked to this admin
@@ -453,13 +437,6 @@ class BackupManager:
 
     def revoke_restore_code_by_super_admin(current_user):
         """Revoke a restore code as a super administrator."""
-        from controllers.rolecheck import is_authorized
-        import sqlite3
-        import os
-        from security.encryption import load_symmetric_key, decrypt_message
-        from logs.log import log_instance
-        from security.validation import Validation
-        import sys
         
         if not is_authorized(current_user.role, 'revoke_restore_code'):
             print("You do not have permission to revoke restore codes.")
@@ -469,7 +446,7 @@ class BackupManager:
         key = load_symmetric_key()
         
         # Get all restore codes
-        conn = sqlite3.connect(db_path)
+        conn = open_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, code, system_admin_id, backup_filename FROM restore_codes")
         all_restore_codes = cursor.fetchall()
@@ -579,7 +556,7 @@ class BackupManager:
         
         # Revoke the code
         try:
-            conn = sqlite3.connect(db_path)
+            conn = open_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM restore_codes WHERE id = ?", (code_to_revoke[0],))
             conn.commit()
@@ -596,17 +573,8 @@ class BackupManager:
             print(f"Error revoking restore code: {e}")
             log_instance.addlog(current_user.username, "Revoke restore code failed", f"Error: {str(e)}", True)
 
-
     def super_admin_restore_backup(current_user):
         """Restore the database from a previous backup."""
-        import os
-        import zipfile
-        from datetime import datetime
-        from controllers.rolecheck import is_authorized
-        import shutil
-        import sys
-        from logs.log import log_instance
-        from security.validation import Validation
 
         if not is_authorized(current_user.role, 'super_admin_restore_backup'):
                 print("You do not have permission to restore backups.")
@@ -689,7 +657,6 @@ class BackupManager:
 
         print("\n\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
         print("You will need to log in again after the restore process is complete.")
-        confirm = input(f"WARNING: This will replace the current database with the backup from {selected_backup}.\nAll current data will be lost.\nContinue? (y/n): ")
         
         while not confirmation_received and confirm_attempts < MAX_CONFIRM_ATTEMPTS:
             confirm = input(f"WARNING: This will replace the current database with the backup from {selected_backup}.\nAll current data will be lost.\nContinue? (y/n): ")
