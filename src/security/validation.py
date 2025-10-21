@@ -17,6 +17,9 @@ class Validation:
     def get_valid_input(prompt, validation_fn, username, field_name):
         while True:
             value = input(prompt).strip()
+            if value == "cancel":
+                print("Operation cancelled by user.")
+                return None
             if validation_fn(value, username):
                 return value
             log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
@@ -172,7 +175,6 @@ class Validation:
         log_instance.log_invalid_input(username, "license", "License number format is incorrect")
         return False
 
-    #NOTE: Controleer hoeft niet perse te beginnen met een hoofletter maar mag wel, pas aan
     @staticmethod
     def brand_validation(brand, username):
         if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\- ]{1,29}", brand):
@@ -181,7 +183,6 @@ class Validation:
         log_instance.log_invalid_input(username, "brand", "Brand name is empty or invalid")
         return False
     
-    #NOTE: Controleer ook op size, en waar hij aan mag voldoen
     @staticmethod
     def model_validation(model, username):
         if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-\s]{1,29}", model):
