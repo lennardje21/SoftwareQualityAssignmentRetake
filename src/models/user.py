@@ -216,7 +216,7 @@ def update_user_by_id(user_id, fields):
         
         for field_name in fields.keys():
             column_name = FIELD_COLUMN_MAPPING[field_name]  # Get the actual column name from mapping
-            updates.append(f"{column_name} = ?")  # Use the mapped column name
+            updates.append(column_name + " = ?")  # Use the mapped column name defensively
             values.append(encrypted_fields[field_name])
         
         values.append(user_id)
