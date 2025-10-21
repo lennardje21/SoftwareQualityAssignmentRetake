@@ -185,12 +185,18 @@ def update_user_by_id(user_id, fields):
     cursor = conn.cursor()
     key = load_symmetric_key() 
     
-    # Whitelist of allowed field names to prevent SQL injection
-    ALLOWED_FIELDS = {'username', 'firstname', 'lastname', 'password'}
+    # Explicit mapping of allowed field names to actual column names
+    # This prevents any user-influenced strings from being interpolated into SQL
+    FIELD_COLUMN_MAPPING = {
+        'username': 'username',
+        'firstname': 'firstname',
+        'lastname': 'lastname',
+        'password': 'password'
+    }
     
     try:
-        # Validate all field names against whitelist
-        if not all(field_name in ALLOWED_FIELDS for field_name in fields.keys()):
+        # Validate all field names against the predefined mapping
+        if not all(field_name in FIELD_COLUMN_MAPPING for field_name in fields.keys()):
             print("Invalid field name detected.")
             return False
         
@@ -204,11 +210,13 @@ def update_user_by_id(user_id, fields):
             else:
                 encrypted_fields[field_name] = encrypt_message(field_value, key)
        
+        # Build query using only predefined column names from the mapping
         updates = []
         values = []
         
         for field_name in fields.keys():
-            updates.append(f"{field_name} = ?")
+            column_name = FIELD_COLUMN_MAPPING[field_name]  # Get the actual column name from mapping
+            updates.append(f"{column_name} = ?")  # Use the mapped column name
             values.append(encrypted_fields[field_name])
         
         values.append(user_id)
