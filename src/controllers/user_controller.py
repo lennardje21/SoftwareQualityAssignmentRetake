@@ -226,8 +226,7 @@ def get_deletable_users(current_user):
         elif user.role == "service_engineer" and current_user.role in ["system_administrator", "super_administrator"]:
             deletable.append(user)
 
-        if user.role == "1":
-            deletable.append(user)
+        # Removed insecure logic that allowed deletion of users with role "1"
 
     return deletable
 
