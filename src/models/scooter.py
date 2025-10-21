@@ -105,7 +105,6 @@ def list_scooters():
     finally:
         close_connection(conn)
 
-
 def delete_scooter(serial_number):
     conn = open_connection()
     cursor = conn.cursor()
@@ -146,7 +145,28 @@ def update_scooter(scooter_id, fields: dict):
     cursor = conn.cursor()
     key = load_symmetric_key()
 
+    FIELD_COLUMN_MAPPING = {
+        'brand': 'brand',
+        'model': 'model',
+        'serial_number': 'serial_number',
+        'top_speed': 'top_speed',
+        'battery_capacity': 'battery_capacity',
+        'soc': 'soc',
+        'soc_range_min': 'soc_range_min',
+        'soc_range_max': 'soc_range_max',
+        'location_latitude': 'location_latitude',
+        'location_longitude': 'location_longitude',
+        'out_of_service': 'out_of_service',
+        'mileage': 'mileage',
+        'last_maintenance_date': 'last_maintenance_date'
+    }
+
     try:
+        # Validate all field names against the predefined mapping
+        if not all(field_name in FIELD_COLUMN_MAPPING for field_name in fields.keys()):
+            print("Invalid field name detected.")
+            return False
+
         encrypted_fields = {}
 
         for field_name, field_value in fields.items():
@@ -156,15 +176,21 @@ def update_scooter(scooter_id, fields: dict):
                 # For non-string values like boolean or int, convert to string
                 encrypted_fields[field_name] = encrypt_message(str(field_value), key)
 
-        set_clause = ', '.join(f"{key} = ?" for key in encrypted_fields.keys())
-        values = list(encrypted_fields.values())
+        # Build query using only predefined column names from the mapping
+        updates = []
+        values = []
+
+        for field_name in fields.keys():
+            column_name = FIELD_COLUMN_MAPPING[field_name]  # Get the actual column name from mapping
+            updates.append(f"{column_name} = ?")  # Use the mapped column name
+            values.append(encrypted_fields[field_name])
+
         values.append(scooter_id)
 
-        cursor.execute(f'''
-            UPDATE scooters
-            SET {set_clause}
-            WHERE id = ?
-        ''', values)
+        # Join the updates safely
+        query = "UPDATE scooters SET " + ", ".join(updates) + " WHERE id = ?"
+
+        cursor.execute(query, values)
         
         conn.commit()
         return True
@@ -229,7 +255,6 @@ def get_scooter_by_serial_number(serial_number):
     finally:
         close_connection(conn)
   
-
 def search_scooters_partial(query):
     conn = open_connection()
     cursor = conn.cursor()
