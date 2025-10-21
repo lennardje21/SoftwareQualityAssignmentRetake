@@ -250,7 +250,7 @@ def delete_user_account(current_user):
         target_id_str = Validation.get_valid_input(
             prompt="\nEnter the ID of the user you want to delete: ",
             validation_fn=Validation.get_valid_id_input,
-            username=current_user,
+            username=current_user.username,
             field_name="id"
         )
 
