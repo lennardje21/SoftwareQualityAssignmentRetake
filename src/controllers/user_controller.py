@@ -426,6 +426,7 @@ def change_own_password(current_user) -> bool:
     
 #TODO: Check for the required role permissions before allowing password reset
 def reset_user_password(current_user):
+    require_authorization(current_user, 'reset_password')
     print("\n--- Reset User Password ---")
 
     editable_users = get_editable_users(current_user)
