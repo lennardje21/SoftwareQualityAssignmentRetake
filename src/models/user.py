@@ -48,7 +48,7 @@ def list_users():
     """List all users in the database."""
     conn = open_connection()
     cursor = conn.cursor()
-    key = load_symmetric_key()  # Ensure the symmetric key is loaded for decryption
+    key = load_symmetric_key() 
     
     try:
         cursor.execute('SELECT id, username, firstname, lastname, role, registration_date FROM users')
@@ -71,7 +71,6 @@ def list_users():
         return []
     finally:
         close_connection(conn)
-
 
 def get_user_by_username(username):
     conn = open_connection()
@@ -119,7 +118,6 @@ def get_user_by_username(username):
         return None
     finally:
         close_connection(conn)
-
 
 def update_password(username, new_password):
     """Update the password for a user."""
@@ -185,9 +183,23 @@ def update_user_by_id(user_id, fields):
     """Update user information by ID."""
     conn = open_connection()
     cursor = conn.cursor()
-    key = load_symmetric_key()  # Load the symmetric key for encryption/decryption
+    key = load_symmetric_key() 
+    
+    # Explicit mapping of allowed field names to actual column names
+    # This prevents any user-influenced strings from being interpolated into SQL
+    FIELD_COLUMN_MAPPING = {
+        'username': 'username',
+        'firstname': 'firstname',
+        'lastname': 'lastname',
+        'password': 'password'
+    }
     
     try:
+        # Validate all field names against the predefined mapping
+        if not all(field_name in FIELD_COLUMN_MAPPING for field_name in fields.keys()):
+            print("Invalid field name detected.")
+            return False
+        
         # Encrypt the field values
         encrypted_fields = {}
         for field_name, field_value in fields.items():
@@ -198,16 +210,20 @@ def update_user_by_id(user_id, fields):
             else:
                 encrypted_fields[field_name] = encrypt_message(field_value, key)
        
-    
-        set_clause = ', '.join(f"{key} = ?" for key in encrypted_fields.keys())
-        values = list(encrypted_fields.values())
+        # Build query using only predefined column names from the mapping
+        updates = []
+        values = []
+        
+        for field_name in fields.keys():
+            column_name = FIELD_COLUMN_MAPPING[field_name]  # Get the actual column name from mapping
+            updates.append(column_name + " = ?")  # Use the mapped column name defensively
+            values.append(encrypted_fields[field_name])
+        
         values.append(user_id)
         
-        cursor.execute(f'''
-            UPDATE users
-            SET {set_clause}
-            WHERE id = ?
-        ''', values)
+        query = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
+        
+        cursor.execute(query, values)
         
         conn.commit()
         return cursor.rowcount > 0  # Return True if the update was successful
