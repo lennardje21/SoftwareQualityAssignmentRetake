@@ -205,7 +205,7 @@ def update_traveller_controller(current_user):
 
     general_methods.clear_console()
     print("----------------------------------------------------------------------------")
-    print("|" + f"Available traveller".center(75) + "|")
+    print("|" + f"Available Travellers".center(75) + "|")
     print("----------------------------------------------------------------------------")
     travellers = list_travellers(current_user)
     if travellers:
