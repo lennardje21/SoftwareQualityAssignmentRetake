@@ -185,7 +185,7 @@ def show_all_users(current_user):
     require_authorization(current_user, 'view_users')
     general_methods.clear_console()
     print("----------------------------------------------------------------------------")
-    print("|" + "Creating a new user".center(75) + "|")
+    print("|" + "Show all users".center(75) + "|")
     print("----------------------------------------------------------------------------")
 
     users = list_users()
