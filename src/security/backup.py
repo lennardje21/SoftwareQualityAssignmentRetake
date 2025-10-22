@@ -570,15 +570,15 @@ class BackupManager:
         for table in tables:
             if table not in tables_to_skip:
                 # wipe current table
-                cur_current.execute(f"DELETE FROM {table}")
+                cur_current.execute(f'DELETE FROM "{table}"')
                 # restore data
-                cur_backup.execute(f"SELECT * FROM {table}")
+                cur_backup.execute(f'SELECT * FROM "{table}"')
                 rows = cur_backup.fetchall()
 
                 if rows:
                     placeholders = ", ".join("?" * len(rows[0]))
                     cur_current.executemany(
-                        f"INSERT INTO {table} VALUES ({placeholders})",
+                        f'INSERT INTO "{table}" VALUES ({placeholders})',
                         rows
                     )
 
