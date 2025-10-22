@@ -1,4 +1,5 @@
 import sys
+from controllers.backup_controller import backup_management_menu
 from controllers.user_controller import user_menu, change_own_password, view_profile, show_all_users
 from controllers.traveller_controller import traveller_menu
 from controllers.scooter_controller import scooter_menu
@@ -71,8 +72,7 @@ def system_administrator_menu(user_data):
     print("[5] List All Users")
     print("[6] User Management")
     print("[7] View Logs")
-    print("[8] Create backup")
-    print("[9] Restore backup using restore code")
+    print("[8] Backup Management")
     print("[10] Logout")
     print("[0] Exit")
     print("----------------------------------------------------------------------------")
@@ -96,10 +96,9 @@ def system_administrator_menu(user_data):
         require_authorization(user_data, 'view_logs')
         logger = LogFunction()
         logger.show_logs(user_data)
-    elif choice == '8':
-        BackupManager.create_backup(user_data)
-    elif choice == '9':
-        BackupManager.system_administrator_restore_backup(user_data)
+    elif choice == '8':  # or whichever number backup was
+        backup_management_menu(user_data)
+
     elif choice == '10':
         print("Logging out...")
         time.sleep(0.5)
@@ -131,10 +130,7 @@ def super_administrator_menu(user_data):
     print("[3] Scooter Management")
     print("[4] User Management")
     print("[5] View Logs")
-    print("[6] Create Backup")
-    print("[7] Restore Backup")
-    print("[8] Create Restore Code")
-    print("[9] Revoke Restore Code")
+    print("[6] Backup Management")
     print("[10] Logout")
     print("[0] Exit")
     print("----------------------------------------------------------------------------")
@@ -153,17 +149,7 @@ def super_administrator_menu(user_data):
         require_authorization(user_data, 'view_logs')
         logger.show_logs(user_data)
     elif choice == '6':
-        require_authorization(user_data, 'create_backup')
-        BackupManager.create_backup(user_data)
-    elif choice == '7':
-        require_authorization(user_data, 'super_admin_restore_backup')
-        BackupManager.super_admin_restore_backup(user_data)
-    elif choice == '8':
-        require_authorization(user_data, 'generate_restore_code')
-        BackupManager.link_backup_restore_code(user_data)
-    elif choice == '9':
-        require_authorization(user_data, 'revoke_restore_code')
-        BackupManager.revoke_restore_code_by_super_admin(user_data)
+        backup_management_menu(user_data)
     elif choice == '10':        
         print("Logging out...")
         time.sleep(0.5)
