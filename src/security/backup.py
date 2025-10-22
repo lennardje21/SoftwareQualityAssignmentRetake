@@ -526,7 +526,7 @@ class BackupManager:
         try:
             # Use the table-safe restore (logs & restore codes preserved)
             if BackupManager.restore_database_from_backup(selected_backup_path, current_user):
-                print(f"\n Database successfully restored from {selected_backup}")
+                print(f"\nDatabase successfully restored from {selected_backup}")
                 print("\nYou are now being logged out for security reasons.")
                 print("Please restart the application and log in again.")
                 sys.exit(0)
