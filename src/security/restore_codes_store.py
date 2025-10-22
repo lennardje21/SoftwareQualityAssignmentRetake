@@ -64,6 +64,11 @@ class RestoreCodeStore:
         self._save_all_raw(records)
 
     def has_code_for_admin(self, admin_id: int) -> bool:
+        """
+        Checks if any restore code exists for the given admin_id.
+
+        Returns True if at least one restore code is associated with the specified admin_id, False otherwise.
+        """
         records = self._load_all_raw()
         for rec in records:
             try:
