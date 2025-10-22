@@ -90,6 +90,9 @@ class RestoreCodeStore:
         return None
 
     def consume_code_by_index(self, index: int) -> None:
+        """
+        Deletes the restore code at the specified index.
+        """
         records = self._load_all_raw()
         if 0 <= index < len(records):
             del records[index]
