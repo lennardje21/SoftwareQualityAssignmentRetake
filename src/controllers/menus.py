@@ -89,16 +89,13 @@ def system_administrator_menu(user_data):
     elif choice == '4':
         scooter_menu(user_data)
     elif choice == '5':
-        show_all_users(user_data)
-    elif choice == '6':
         user_menu(user_data)
-    elif choice == '7':
+    elif choice == '6':
         require_authorization(user_data, 'view_logs')
         logger = LogFunction()
         logger.show_logs(user_data)
-    elif choice == '8':  # or whichever number backup was
+    elif choice == '7':
         backup_management_menu(user_data)
-
     elif choice == '10':
         print("Logging out...")
         time.sleep(0.5)
