@@ -87,13 +87,16 @@ class BackupManager:
                 # Add the database to the zip, but use only the filename in the zip
                 zipf.write(db_path, os.path.basename(db_path))
             
-            print(f"Backup created successfully as ZIP archive at {zip_path}")
-            log_instance.addlog(current_user.username, "Create backup", f"Backup created at {zip_path}", False)
+            print(f"Backup created successfully as {backup_name}")
+            log_instance.addlog(current_user.username, "Create backup", f"Backup {backup_name} created", False)
+            general_methods.hidden_input("\nPress Enter to return to the user menu...")
             return True
         except Exception as e:
             print(f"Error creating backup: {e}")
             log_instance.addlog(current_user.username, "Create backup failed", f"Error: {str(e)}", True)
+            general_methods.hidden_input("\nPress Enter to return to the user menu...")
             return False
+
 
     def generate_unique_restore_code():
         """Generate a unique restore code."""
@@ -105,26 +108,25 @@ class BackupManager:
 
         return restore_code
     
+    @staticmethod
     def link_backup_restore_code(current_user):
-        """Function to link a backup restore code to a system admin.
-        This function is intended to be used by a super administrator.
-        It allows the super admin to select a system admin and generate a unique restore code for them"""
+        """Super admin: link a restore code to a system admin and a specific backup (stored outside the DB)."""
+        from security.restore_codes_store import RestoreCodeStore
 
         if not is_authorized(current_user.role, 'link_backup_restore_code'):
             print("You do not have permission to generate backup restore codes.")
             return
-        
+
         key = load_symmetric_key()
         base_dir, db_path, backup_dir = BackupManager.get_paths()
 
-        # Show a list of system admins to choose from
+        # List system admins
         conn = open_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, username, role FROM users")
         all_users = cursor.fetchall()
         conn.close()
 
-        # Filter system admins after decryption
         system_admins = []
         for user in all_users:
             try:
@@ -143,7 +145,7 @@ class BackupManager:
         for admin in system_admins:
             print(f"{admin[0]}. {admin[1]}")
 
-        # Get user selection for admin
+        # Select admin
         admin_found = False
         invalid_admin_attempts = 0
         MAX_INVALID_ADMIN_ATTEMPTS = 3
@@ -156,49 +158,45 @@ class BackupManager:
                 "admin id"
             ))
 
-            # Check if this ID exists in the system_admins list
             for admin in system_admins:
                 if admin[0] == admin_id:
                     selected_admin_id = admin_id
                     selected_admin_name = admin[1]
                     admin_found = True
                     break
-                    
+
             if not admin_found:
                 invalid_admin_attempts += 1
                 print(f"No system administrator found with ID {admin_id}.")
                 log_instance.log_invalid_input(current_user.username, "admin selection", f"Invalid admin ID: {admin_id}")
-                
                 if invalid_admin_attempts >= MAX_INVALID_ADMIN_ATTEMPTS:
                     print("Too many failed attempts to select a valid administrator.")
-                    log_instance.addlog(current_user.username, "Backup restore ID input", 
-                                    f"Multiple failed admin ID selection attempts ({invalid_admin_attempts})", True)
+                    log_instance.addlog(current_user.username, "Backup restore ID input",
+                                        f"Multiple failed admin ID selection attempts ({invalid_admin_attempts})", True)
                     print("For security reasons, you have been logged out.")
                     sys.exit(1)
-        
+
         # Show available backups
-        backup_dir = os.path.join(base_dir, 'backups')
         if not os.path.exists(backup_dir):
             print("Backup directory not found.")
             return
-            
+
         backups = [f for f in os.listdir(backup_dir) if f.endswith('.zip')]
         if not backups:
             print("No backup files found.")
             return
-            
+
         print("\n=== Available Backups ===")
         for i, backup in enumerate(backups, 1):
             print(f"{i}. {backup}")
 
-        
-        # Get user selection for backup file
+        # Select backup
         backup_found = False
         invalid_backup_attempts = 0
         MAX_INVALID_BACKUP_ATTEMPTS = 3
 
         while not backup_found:
-            backup_choice = input("\nEnter the number of the backup you wish to restore: ")
+            backup_choice = input("\nEnter the number of the backup you wish to link: ").strip()
             try:
                 backup_index = int(backup_choice) - 1
                 if backup_index in range(len(backups)):
@@ -207,371 +205,246 @@ class BackupManager:
                 else:
                     invalid_backup_attempts += 1
                     print(f"Invalid backup selection. Please choose a number between 1 and {len(backups)}.")
-                    log_instance.log_invalid_input(current_user.username, "backup selection", f"Invalid backup index: {backup_index + 1}")
-                    
+                    log_instance.log_invalid_input(current_user.username, "backup selection",
+                                                f"Invalid backup index: {backup_index + 1}")
                     if invalid_backup_attempts >= MAX_INVALID_BACKUP_ATTEMPTS:
                         print("Too many failed attempts to select a valid backup file.")
-                        log_instance.addlog(current_user.username, "Backup restore file selection", 
-                                        f"Multiple failed backup selection attempts ({invalid_backup_attempts})", True)
+                        log_instance.addlog(current_user.username, "Backup restore file selection",
+                                            f"Multiple failed backup selection attempts ({invalid_backup_attempts})", True)
                         print("For security reasons, you have been logged out.")
                         sys.exit(1)
             except ValueError:
                 invalid_backup_attempts += 1
                 print("Please enter a valid number.")
-                log_instance.log_invalid_input(current_user.username, "backup selection", f"Invalid backup selection input: {backup_choice}")
-                
+                log_instance.log_invalid_input(current_user.username, "backup selection",
+                                            f"Invalid backup selection input: {backup_choice}")
                 if invalid_backup_attempts >= MAX_INVALID_BACKUP_ATTEMPTS:
                     print("Too many failed attempts to select a valid backup file.")
-                    log_instance.addlog(current_user.username, "Backup restore file selection", 
-                                    f"Multiple failed backup selection attempts ({invalid_backup_attempts})", True)
+                    log_instance.addlog(current_user.username, "Backup restore file selection",
+                                        f"Multiple failed backup selection attempts ({invalid_backup_attempts})", True)
                     print("For security reasons, you have been logged out.")
                     sys.exit(1)
 
-        # Generate a unique restore code
+        # Generate code and store OUTSIDE DB
         restore_code = BackupManager.generate_unique_restore_code()
+        RestoreCodeStore().add_code(selected_admin_id, selected_backup, restore_code)
 
-        # Encrypt the data before storing
-        encrypted_code = encrypt_message(restore_code, key)
-        selected_backup = backups[backup_index]  # fetch the selected backup file name
-        encrypted_backup_filename = encrypt_message(selected_backup, key)
-        encrypted_admin_id = encrypt_message(str(selected_admin_id), key)
+        print(f"\nBackup restore code generated successfully: {restore_code}")
+        print(f"This code has been linked to administrator: {selected_admin_name}")
+        print(f"For backup file: {selected_backup}")
+        print("\nIMPORTANT: Share this code securely with the administrator.")
+        general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
-        # Store the encrypted restore code in the database
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("INSERT INTO restore_codes (code, system_admin_id, backup_filename) VALUES (?, ?, ?)",
-                        (encrypted_code, encrypted_admin_id, encrypted_backup_filename))
-            conn.commit()
-            
-            print(f"\nBackup restore code generated successfully: {restore_code}")
-            print(f"This code has been linked to administrator: {selected_admin_name}")
-            print(f"For backup file: {selected_backup}")
-            print("\nIMPORTANT: Share this code securely with the administrator.")
-            general_methods.hidden_input("\nPress Enter to return to the user menu...")
-            
-            log_instance.addlog(
-                current_user.username, 
-                "Generated restore code", 
-                f"Code linked to admin ID {selected_admin_id} for backup {selected_backup}", 
-                False
-            )
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            log_instance.addlog(current_user.username, "Generate restore code failed", f"Error: {str(e)}", True)
-        finally:
-            conn.close()
+        log_instance.addlog(
+            current_user.username,
+            "Generated restore code",
+            f"Code linked to admin ID {selected_admin_id} for backup {selected_backup}",
+            False
+        )
 
+
+    @staticmethod
     def system_administrator_restore_backup(current_user):
-        """Restore the database from a previous backup using a restore code."""
+        """Restore using a restore code linked to this System Admin (codes stored outside DB)."""
+        from security.restore_codes_store import RestoreCodeStore
 
         if not is_authorized(current_user.role, 'system_administrator_restore_backup'):
             print("You do not have permission to restore backups.")
             return
 
-        # Check if the user has a restore code linked to their account
+        # Verify there is a code for this admin
         if not BackupManager.check_for_restore_code(current_user):
             print("No restore code linked to your account. Please contact a super administrator.")
             return
-        
-            # Ask for the restore code with validation and attempt limiting
+
         MAX_RESTORE_CODE_ATTEMPTS = 3
-        restore_code_attempts = 0
-        valid_code_found = False
-        
-        # Get key for decryption
-        key = load_symmetric_key()
+        attempts = 0
+        store = RestoreCodeStore()
         base_dir, db_path, backup_dir = BackupManager.get_paths()
-        
-        while not valid_code_found and restore_code_attempts < MAX_RESTORE_CODE_ATTEMPTS:
-            restore_code_input = input("\nEnter your restore code (or 'c' to cancel): ").strip()
-            
-            if restore_code_input.lower() == 'c':
+
+        matching_index = None
+        backup_filename = None
+
+        while attempts < MAX_RESTORE_CODE_ATTEMPTS:
+            code_input = input("\nEnter your restore code (or 'c' to cancel): ").strip()
+            if code_input.lower() == 'c':
                 print("Backup restoration cancelled.")
                 return
-            
-            # Connect to database and get all restore codes
-            conn = open_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, code, system_admin_id, backup_filename FROM restore_codes")
-            all_restore_codes = cursor.fetchall()
-            conn.close()
 
-            # Look for a matching restore code
-            matching_restore_code = None
-            backup_filename = None
-            
-            for code_id, code_encrypted, admin_id, filename_encrypted in all_restore_codes:
-                try:
-                    decrypted_code = decrypt_message(code_encrypted, key)
-                    if decrypted_code == restore_code_input:
-                        decrypted_admin_id = int(decrypt_message(admin_id, key))
-                        
-                        if decrypted_admin_id == current_user.id:
-                            matching_restore_code = code_id
-                            backup_filename = decrypt_message(filename_encrypted, key)
-                            valid_code_found = True
-                            break
-                except Exception as e:
-                    continue
-            
-            if not valid_code_found:
-                restore_code_attempts += 1
-                print("Invalid restore code or code does not belong to your account.")
-                log_instance.log_invalid_input(current_user.username, "system administrator restore backup", f"Invalid restore code: {restore_code_input}")
-                
-                if restore_code_attempts >= MAX_RESTORE_CODE_ATTEMPTS:
-                    print("Too many failed attempts to enter a valid restore code.")
-                    log_instance.addlog(current_user.username, "system administrator restore backup", 
-                                    f"Multiple failed restore code attempts ({restore_code_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
+            match = store.find_matching_code(code_input, current_user.id)
+            if match:
+                matching_index, rec = match
+                # decrypt backup filename
+                backup_filename = decrypt_message(rec["backup_filename"], store.key)
+                break
+
+            attempts += 1
+            print("Invalid restore code or code does not belong to your account.")
+            log_instance.log_invalid_input(current_user.username, "system administrator restore backup",
+                                        f"Invalid restore code: {code_input}")
+            if attempts >= MAX_RESTORE_CODE_ATTEMPTS:
+                print("Too many failed attempts to enter a valid restore code.")
+                log_instance.addlog(current_user.username, "system administrator restore backup",
+                                    f"Multiple failed restore code attempts ({attempts})", True)
+                print("For security reasons, you have been logged out.")
+                sys.exit(1)
 
         # Proceed with restoring the backup
         backup_path = os.path.join(base_dir, 'backups', backup_filename)
-
         if not os.path.exists(backup_path):
             print(f"Backup file {backup_filename} does not exist at {backup_path}")
-            log_instance.addlog(current_user.username, "Restore backup failed", f"Backup file not found: {backup_filename}", True)
+            log_instance.addlog(current_user.username, "Restore backup failed",
+                                f"Backup file not found: {backup_filename}", True)
             return
 
-        # Confirmation with attempt limiting
+        # Confirm
         MAX_CONFIRM_ATTEMPTS = 3
         confirm_attempts = 0
-        confirmation_received = False
-        # Ask for confirmation before restoring the backup
         print("\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
         print("You will need to log in again after the restore process is complete.")
-        
-        while not confirmation_received and confirm_attempts < MAX_CONFIRM_ATTEMPTS:
-            confirm = input(f"WARNING: This will replace the current database with the backup from {backup_filename}.\nAll current data will be lost. Continue? (y/n): ")
-            
-            if confirm.lower() == 'y':
-                confirmation_received = True
-            elif confirm.lower() == 'n':
+
+        while confirm_attempts < MAX_CONFIRM_ATTEMPTS:
+            confirm = input(f"WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
+            if confirm == 'y':
+                break
+            elif confirm == 'n':
                 print("Backup restoration cancelled.")
                 return False
             else:
                 confirm_attempts += 1
                 print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
                 log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
-                
                 if confirm_attempts >= MAX_CONFIRM_ATTEMPTS:
                     print("Too many failed attempts to confirm. Operation cancelled.")
-                    log_instance.addlog(current_user.username, "Restore backup", 
-                                    f"Multiple failed confirmation attempts ({confirm_attempts})", True)
+                    log_instance.addlog(current_user.username, "Restore backup",
+                                        f"Multiple failed confirmation attempts ({confirm_attempts})", True)
                     print("For security reasons, you have been logged out.")
                     sys.exit(1)
 
-
-        try:
-            # Proceed with restoring the backup
-            backup_path = os.path.join(backup_dir, backup_filename)
-
-            # Ensure the backup directory exists
-            os.makedirs(os.path.dirname(db_path), exist_ok=True)
-
-            # Use the extract_db_from_zip helper
-            if backup_filename.endswith('.zip'):
-                if BackupManager.extract_db_from_zip(backup_path, db_path, current_user):
-                    print(f"Database successfully restored from {backup_filename}")
-                else:
-                    return False
-            else:
-                # If it's not a ZIP file, copy the file directly
-                shutil.copy2(backup_path, db_path)
-
-            # Remove the restore code after use
-            conn = open_connection()
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM restore_codes WHERE id = ?", (matching_restore_code,))
-            conn.commit()
-            conn.close()
-
+        # Restore (table-safe) and consume the code
+        if BackupManager.restore_database_from_backup(backup_path, current_user):
+            store.consume_code_by_index(matching_index)
             print("\nYou are now being logged out for security reasons.")
             print("Please restart the application and log in again.")
-            sys.exit(0)  # Close the application successfully
-
-        except Exception as e:
-            print(f"Error restoring backup: {e}")
-            log_instance.addlog(current_user.username, "Restore backup failed", f"Error: {str(e)}", True)
+            sys.exit(0)
+        else:
+            print("\n❌ Restore failed.")
             return False
 
+
+    @staticmethod
     def check_for_restore_code(current_user):
-        """Check if the current user has a restore code linked to their account."""
-        
+        """Check if the current user has a restore code linked to their account (stored outside DB)."""
+        from security.restore_codes_store import RestoreCodeStore
+
         if not is_authorized(current_user.role, 'check_for_restore_code'):
             print("You do not have permission to check for restore codes.")
             return False
-        
-        base_dir, db_path, backup_dir = BackupManager.get_paths()
-        key = load_symmetric_key()
-        
-        conn = open_connection()
-        cursor = conn.cursor()
 
-        # Query for all restore codes linked to this admin
-        cursor.execute("SELECT code, backup_filename, system_admin_id FROM restore_codes")
-        all_codes = cursor.fetchall()
-        conn.close()
+        return RestoreCodeStore().has_code_for_admin(current_user.id)
 
-        # Filter codes linked to this administrator
-        user_codes = []
-        for code_encrypted, filename_encrypted, admin_id_encrypted in all_codes:
-            try:
-                # Decrypt the admin ID and compare with current user
-                decrypted_admin_id = int(decrypt_message(admin_id_encrypted, key))
-                
-                if decrypted_admin_id == current_user.id:
-                    decrypted_code = decrypt_message(code_encrypted, key)
-                    decrypted_filename = decrypt_message(filename_encrypted, key)
-                    user_codes.append((decrypted_code, decrypted_filename))
-            except Exception:
-                continue
-        
-        if not user_codes:
-            return False  # No restore codes found
 
-        return True  # Restore codes found
-
+    @staticmethod
     def revoke_restore_code_by_super_admin(current_user):
-        """Revoke a restore code as a super administrator."""
-        
+        """Super admin: revoke a restore code stored outside DB."""
+        from security.restore_codes_store import RestoreCodeStore
+
         if not is_authorized(current_user.role, 'revoke_restore_code'):
             print("You do not have permission to revoke restore codes.")
             return
-            
-        base_dir, db_path, backup_dir = BackupManager.get_paths()
+
+        # Build admin name lookup for display (from users table)
         key = load_symmetric_key()
-        
-        # Get all restore codes
         conn = open_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, code, system_admin_id, backup_filename FROM restore_codes")
-        all_restore_codes = cursor.fetchall()
-        
-        # Get all administrators for displaying names
         cursor.execute("SELECT id, username FROM users")
         all_users = cursor.fetchall()
         conn.close()
-        
-        # Create a lookup table for admin usernames
+
         admin_usernames = {}
         for user_id, username_encrypted in all_users:
             try:
                 admin_usernames[user_id] = decrypt_message(username_encrypted, key)
             except Exception:
                 admin_usernames[user_id] = f"User ID {user_id}"
-        
-        # Process and display all restore codes
-        if not all_restore_codes:
-            print("No restore codes found in the system.")
+
+        # Load codes (decrypted for display)
+        store = RestoreCodeStore()
+        codes = store.list_all_decrypted()
+        if not codes:
+            print("No restore codes found.")
             return
-        
+
         print("\n=== Active Restore Codes ===")
-        valid_codes = []
-        
-        for i, (code_id, code_encrypted, admin_id_encrypted, filename_encrypted) in enumerate(all_restore_codes, 1):
-            try:
-                decrypted_code = decrypt_message(code_encrypted, key)
-                decrypted_filename = decrypt_message(filename_encrypted, key)
-                decrypted_admin_id = int(decrypt_message(admin_id_encrypted, key))
-                admin_name = admin_usernames.get(decrypted_admin_id, f"Unknown Admin (ID: {decrypted_admin_id})")
-                
-                print(f"{i}. Code: {decrypted_code} - Admin: {admin_name} - Backup: {decrypted_filename}")
-                valid_codes.append((code_id, decrypted_code, decrypted_admin_id, admin_name, decrypted_filename))
-            except Exception as e:
-                print(f"Error processing code ID {code_id}: {e}")
-                continue
-        
-        if not valid_codes:
-            print("No valid restore codes found.")
-            return
-        
-        # Ask which code to revoke
+        for i, c in enumerate(codes, 1):
+            admin_name = admin_usernames.get(c["admin_id"], f"Unknown Admin (ID: {c['admin_id']})")
+            print(f"{i}. Code: {c['code']} - Admin: {admin_name} - Backup: {c['backup_filename']} - Created: {c['created_at']}")
+
+        # Select which to revoke
         MAX_SELECTION_ATTEMPTS = 3
-        selection_attempts = 0
-        code_selection_valid = False
-        
-        while not code_selection_valid and selection_attempts < MAX_SELECTION_ATTEMPTS:
-            choice = input("\nEnter the number of the code to revoke (or 'c' to cancel): ")
-            
-            if choice.lower() == 'c':
+        attempts = 0
+        index = None
+
+        while attempts < MAX_SELECTION_ATTEMPTS:
+            choice = input("\nEnter the number of the code to revoke (or 'c' to cancel): ").strip().lower()
+            if choice == 'c':
                 print("Operation cancelled.")
                 return
-            
+
             try:
-                index = int(choice) - 1
-                if 0 <= index < len(valid_codes):
-                    code_to_revoke = valid_codes[index]
-                    code_selection_valid = True
+                idx = int(choice) - 1
+                if 0 <= idx < len(codes):
+                    index = idx
+                    break
                 else:
-                    selection_attempts += 1
-                    print(f"Please enter a number between 1 and {len(valid_codes)}.")
-                    log_instance.log_invalid_input(current_user.username, "restore code selection", f"Invalid code index: {index + 1}")
-                    
-                    if selection_attempts >= MAX_SELECTION_ATTEMPTS:
-                        print("Too many failed attempts to select a valid restore code.")
-                        log_instance.addlog(current_user.username, "Backup code revoking", 
-                                        f"Multiple failed restore code selection attempts ({selection_attempts})", True)
-                        print("For security reasons, you have been logged out.")
-                        sys.exit(1)
+                    attempts += 1
+                    print(f"Please enter a number between 1 and {len(codes)}.")
+                    log_instance.log_invalid_input(current_user.username, "restore code selection",
+                                                f"Invalid code index: {idx + 1}")
             except ValueError:
-                selection_attempts += 1
+                attempts += 1
                 print("Please enter a valid number.")
-                log_instance.log_invalid_input(current_user.username, "restore code selection", f"Invalid input: {choice}")
-                
-                if selection_attempts >= MAX_SELECTION_ATTEMPTS:
-                    print("Too many failed attempts to select a valid restore code.")
-                    log_instance.addlog(current_user.username, "backup code revoking", 
-                                    f"Multiple failed restore code selection attempts ({selection_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
-        
-        # Confirm revocation with validation and attempt limiting
+                log_instance.log_invalid_input(current_user.username, "restore code selection",
+                                            f"Invalid input: {choice}")
+
+            if attempts >= MAX_SELECTION_ATTEMPTS:
+                print("Too many failed attempts to select a valid restore code.")
+                log_instance.addlog(current_user.username, "backup code revoking",
+                                    f"Multiple failed restore code selection attempts ({attempts})", True)
+                print("For security reasons, you have been logged out.")
+                sys.exit(1)
+
+        # Confirm revocation
         MAX_CONFIRM_ATTEMPTS = 3
         confirm_attempts = 0
-        confirmation_received = False
-        
-        while not confirmation_received and confirm_attempts < MAX_CONFIRM_ATTEMPTS:
-            confirm = input(f"Are you sure you want to revoke the restore code {code_to_revoke[1]} assigned to {code_to_revoke[3]}? (y/n): ")
-            
-            if confirm.lower() == 'y':
-                confirmation_received = True
-            elif confirm.lower() == 'n':
+        while confirm_attempts < MAX_CONFIRM_ATTEMPTS:
+            confirm = input(f"Are you sure you want to revoke the restore code {codes[index]['code']}? (y/n): ").strip().lower()
+            if confirm == 'y':
+                break
+            elif confirm == 'n':
                 print("Operation cancelled.")
                 return
             else:
                 confirm_attempts += 1
                 print("Invalid input. Please enter 'y' to confirm or 'n' to cancel.")
                 log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
-                
                 if confirm_attempts >= MAX_CONFIRM_ATTEMPTS:
                     print("Too many failed attempts to confirm. Operation cancelled.")
-                    log_instance.addlog(current_user.username, "Revoke restore code", 
-                                    f"Multiple failed confirmation attempts ({confirm_attempts})", True)
+                    log_instance.addlog(current_user.username, "Revoke restore code",
+                                        f"Multiple failed confirmation attempts ({confirm_attempts})", True)
                     print("For security reasons, you have been logged out.")
                     sys.exit(1)
-        
-        # Revoke the code
-        try:
-            conn = open_connection()
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM restore_codes WHERE id = ?", (code_to_revoke[0],))
-            conn.commit()
-            conn.close()
-            
-            print(f"Restore code successfully revoked.")
-            log_instance.addlog(
-                current_user.username, 
-                "Revoked restore code", 
-                f"Revoked code {code_to_revoke[1]} from admin {code_to_revoke[3]}", 
-                False
-            )
-        except sqlite3.Error as e:
-            print(f"Error revoking restore code: {e}")
-            log_instance.addlog(current_user.username, "Revoke restore code failed", f"Error: {str(e)}", True)
+
+        # Revoke
+        store.consume_code_by_index(index)
+        print("Restore code successfully revoked.")
+        log_instance.addlog(
+            current_user.username,
+            "Revoked restore code",
+            f"Revoked code {codes[index]['code']} from admin ID {codes[index]['admin_id']}",
+            False
+        )
+
 
     def super_admin_restore_backup(current_user):
         """Restore the database from a previous backup."""
@@ -650,52 +523,83 @@ class BackupManager:
         
         selected_backup_path = os.path.join(backup_dir, selected_backup)
 
-        # Ask for confirmation
-        MAX_CONFIRM_ATTEMPTS = 3
-        confirm_attempts = 0
-        confirmation_received = False
-
-        print("\n\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
-        print("You will need to log in again after the restore process is complete.")
-        
-        while not confirmation_received and confirm_attempts < MAX_CONFIRM_ATTEMPTS:
-            confirm = input(f"WARNING: This will replace the current database with the backup from {selected_backup}.\nAll current data will be lost.\nContinue? (y/n): ")
-            
-            if confirm.lower() == 'y':
-                confirmation_received = True
-            elif confirm.lower() == 'n':
-                print("Backup restoration cancelled.")
-                return False
-            else:
-                confirm_attempts += 1
-                print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
-                log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
-                
-                if confirm_attempts >= MAX_CONFIRM_ATTEMPTS:
-                    print("Too many failed attempts to confirm. Operation cancelled.")
-                    log_instance.addlog(current_user.username, "Super admin restore backup", 
-                                    f"Multiple failed confirmation attempts ({confirm_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
-    
         try:
-            # Ensure the target directory exists
-            os.makedirs(os.path.dirname(db_path), exist_ok=True)
-
-            # Use the extract_db_from_zip helper
-            if BackupManager.extract_db_from_zip(selected_backup_path, db_path, current_user):
-                print(f"Database successfully restored from {selected_backup}")
+            # Use the table-safe restore (logs & restore codes preserved)
+            if BackupManager.restore_database_from_backup(selected_backup_path, current_user):
+                print(f"\nDatabase successfully restored from {selected_backup}")
+                print("\nYou are now being logged out for security reasons.")
+                print("Please restart the application and log in again.")
+                sys.exit(0)
             else:
+                print("\n❌ Restore failed.")
                 return False
-            
-            print("\nYou are now being logged out for security reasons.")
-            print("Please restart the application and log in again.")
-            sys.exit(0)  # Close the application successfully
-
         except Exception as e:
             print(f"Error restoring backup: {e}")
             log_instance.addlog(current_user.username, "Super admin restore backup failed", f"Error: {str(e)}", True)
             return False
-            
+
+        
+    @staticmethod
+    def restore_database_from_backup(backup_path, current_user):
+        """
+        Restore database tables from a backup, excluding logs and restore_codes.
+        Also logs the restore event afterwards.
+        """
+        base_dir, db_path, backup_dir = BackupManager.get_paths()
+        temp_db = os.path.join(base_dir, 'data', 'temp_restore.db')
+
+        # STEP 1: Extract backup → temp DB
+        if backup_path.endswith('.zip'):
+            if not BackupManager.extract_db_from_zip(backup_path, temp_db, current_user):
+                return False
+        else:
+            shutil.copy2(backup_path, temp_db)
+
+        # STEP 2: Open current & backup DB
+        conn_current = open_connection()
+        conn_backup = sqlite3.connect(temp_db)
+        cur_current = conn_current.cursor()
+        cur_backup = conn_backup.cursor()
+
+        # STEP 3: Copy tables except logs and restore_codes
+        tables_to_skip = {"logs", "restore_codes"}
+
+        cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cur_backup.fetchall()]
+
+        for table in tables:
+            if table not in tables_to_skip:
+                # wipe current table
+                cur_current.execute(f'DELETE FROM "{table}"')
+                # restore data
+                cur_backup.execute(f'SELECT * FROM "{table}"')
+                rows = cur_backup.fetchall()
+
+                if rows:
+                    placeholders = ", ".join("?" * len(rows[0]))
+                    cur_current.executemany(
+                        f'INSERT INTO "{table}" VALUES ({placeholders})',
+                        rows
+                    )
+
+        # STEP 4: Commit & close
+        conn_current.commit()
+        conn_backup.close()
+        conn_current.close()
+
+        # STEP 5: Cleanup
+        os.remove(temp_db)
+
+        # STEP 6: Log the restore event
+        from logs.log import log_instance
+        log_instance.addlog(
+            current_user.username,
+            "Restore backup",
+            f"System restored using backup: {os.path.basename(backup_path)}",
+            False
+        )
+
+        return True
+
 
 backup_instance = BackupManager()
