@@ -70,6 +70,12 @@ def backup_management_menu(user_data):
 
 
 def _view_codes(user_data):
+    """
+    Displays all active restore codes for super admin viewing.
+
+    Args:
+        user_data: The user data object representing the current user. Must be a super admin.
+    """
     store = RestoreCodeStore()
     codes = store.list_all_decrypted()
     general_methods.clear_console()
