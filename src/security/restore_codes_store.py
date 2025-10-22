@@ -21,6 +21,10 @@ class RestoreCodeStore:
 
     # ---------- low-level helpers ----------
     def _load_all_raw(self) -> List[Dict]:
+        """
+        Loads encrypted restore code records from the JSON file.
+        Returns an empty list if the file is missing, corrupt, or not a list.
+        """
         if not os.path.exists(self.file_path):
             return []
         try:
