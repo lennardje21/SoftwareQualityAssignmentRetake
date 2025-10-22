@@ -122,7 +122,7 @@ def create_new_user(current_user):
     print("|" + "Creating a new user".center(75) + "|")
     print("----------------------------------------------------------------------------")
     
-    print("Username requirements: 3-20 characters, letters and numbers only.")
+    print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
         username = input("Enter username: ").strip().lower()
         if Validation.username_validation(username):
@@ -132,7 +132,7 @@ def create_new_user(current_user):
             else:
                 break
     
-    print("Password requirements: At least 8 characters, including uppercase, lowercase, number, and special character.")
+    print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character.")
     password = Validation.get_valid_input(
     prompt="Enter password: ",
     validation_fn=Validation.password_validation,
@@ -405,7 +405,6 @@ def change_own_password(current_user) -> bool:
         log_instance.addlog(current_user.username, "Password change failed", "Too many old password attempts", True)
         return False
 
-    # Daarna: 3 pogingen voor nieuw wachtwoord (via helper)
     new_password = Validation.get_valid_input(
         "Enter your new password: ",
         Validation.password_validation,
@@ -417,7 +416,6 @@ def change_own_password(current_user) -> bool:
     if success:
         log_instance.addlog(current_user.username, "Password changed successfully", "", False)
         print("Password changed successfully. You will now be logged out.")
-        sys.exit()
         return True
     else:
         log_instance.addlog(current_user.username, "Password change failed", "Database error", True)

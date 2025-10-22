@@ -57,7 +57,7 @@ def system_administrator_menu(user_data):
     logger = LogFunction()
 
     if logger.check_for_suspicious_logs(user_data):
-        require_authorization(user_data.role, 'view_logs')
+        require_authorization(user_data, 'view_logs')
         logger.show_suspicious_logs(user_data)
 
     general_methods.clear_console()
