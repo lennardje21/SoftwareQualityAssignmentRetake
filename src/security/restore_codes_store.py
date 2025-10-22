@@ -38,6 +38,10 @@ class RestoreCodeStore:
             return []
 
     def _save_all_raw(self, records: List[Dict]) -> None:
+        """
+        Writes the given list of encrypted restore code records to the JSON file at self.file_path.
+        Each record in the list should be a dictionary with encrypted fields.
+        """
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(records, f, ensure_ascii=False, indent=2)
 
