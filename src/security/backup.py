@@ -542,7 +542,7 @@ class BackupManager:
     @staticmethod
     def restore_database_from_backup(backup_path, current_user):
         """
-        Restore database tables from a backup, excluding logs and restore_codes.
+        Restore database tables from a backup, excluding logs.
         Also logs the restore event afterwards.
         """
         base_dir, db_path, backup_dir = BackupManager.get_paths()
@@ -561,8 +561,8 @@ class BackupManager:
         cur_current = conn_current.cursor()
         cur_backup = conn_backup.cursor()
 
-        # STEP 3: Copy tables except logs and restore_codes
-        tables_to_skip = {"logs", "restore_codes"}
+        # STEP 3: Copy tables except logs
+        tables_to_skip = {"logs"}
 
         cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = [row[0] for row in cur_backup.fetchall()]
@@ -574,7 +574,6 @@ class BackupManager:
                 # restore data
                 cur_backup.execute(f'SELECT * FROM "{table}"')
                 rows = cur_backup.fetchall()
-
                 if rows:
                     placeholders = ", ".join("?" * len(rows[0]))
                     cur_current.executemany(
