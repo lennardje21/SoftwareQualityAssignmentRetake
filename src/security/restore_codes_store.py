@@ -43,6 +43,14 @@ class RestoreCodeStore:
 
     # ---------- public API ----------
     def add_code(self, admin_id: int, backup_filename: str, code: str) -> None:
+        """
+        Encrypts and stores a new restore code record.
+
+        Args:
+            admin_id (int): The ID of the admin to associate with the code.
+            backup_filename (str): The filename of the backup associated with the code.
+            code (str): The restore code to be stored.
+        """
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         enc_record = {
