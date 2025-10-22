@@ -23,7 +23,7 @@ class Validation:
             if validation_fn(value, username):
                 return value
             log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
-            print(f"Invalid {field_name}. Please try again.")
+            # print(f"Invalid {field_name}. Please try again.")
 
     @staticmethod
     def get_valid_range_input(prompt_min, prompt_max, validation_fn, username, field_name):
@@ -58,7 +58,7 @@ class Validation:
         if re.fullmatch(r"[1-9]\d{0,7}", id):  # 1 t/m 99999999 (max 8 numbers, no leading zero)
             return True
 
-        # print("ID is not valid (must be a positive number ≤ 99999999 without leading zeros).")
+        print("Invalid ID (must be a positive number ≤ 99999999 without leading zeros).")
         log_instance.log_invalid_input(username, "id", f"Invalid ID input: {id}")
         return False
 
@@ -67,7 +67,7 @@ class Validation:
     def name_validation(name, username):
         if re.fullmatch(r"[A-Za-z]{2,30}", name):
             return True
-        # print("Name is not valid")
+        print("Name is not valid")
         log_instance.log_invalid_input(username, "name","Name must only contain letters (1–30 characters)")
         return False
     
@@ -83,7 +83,7 @@ class Validation:
     def password_validation(password, username):
         if re.fullmatch(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~!@#$%&_\-+=`|\\(){}\[\]:;'<>,.?/])[A-Za-z\d~!@#$%&_\-+=`|\\(){}\[\]:;'<>,.?/]{12,30}$", password):
             return True
-        # print("Password is not valid")
+        print("Password is not valid")
         log_instance.log_invalid_input(username, "password", "Password does not meet complexity requirements")
         return False
 

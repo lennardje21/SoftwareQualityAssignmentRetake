@@ -363,7 +363,7 @@ def update_user_account(current_user):
         update_data = {}
 
         if choice == '1':
-            # ✅ Username update behavior same as CREATE
+            # Username update behavior same as CREATE
             print("Username requirements: 8-10 characters, letters and numbers only.")
             while True:
                 new_username = input("Enter new username (or 'cancel' to stop): ").strip().lower()
