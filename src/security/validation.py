@@ -63,7 +63,7 @@ class Validation:
             return False
         
         if not re.fullmatch(r"^[A-Za-z]((?![\s\-']{2})[A-Za-z\s\-'])*[A-Za-z]$|^[A-Za-z]{2}$", name):
-            print(f"Invalid name: {name}. Name must start and end with a letter.")
+            print(f"Invalid name: {name}. Name must be 2-30 characters, start and end with a letter, contain only letters, spaces, hyphens, and apostrophes, and not have consecutive special characters (spaces, hyphens, apostrophes).")
             log_instance.log_invalid_input(username, "name", "Invalid format")
             return False
         
