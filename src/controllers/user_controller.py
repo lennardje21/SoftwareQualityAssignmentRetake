@@ -122,8 +122,6 @@ def create_new_user(current_user):
     )
     if password == None:
         return
-    
-
     allowed_roles = get_permitted_roles(current_user.role)
     # Build a mapping from both names and numbers → role names
     role_lookup = {str(v): k for k, v in allowed_roles.items()}
