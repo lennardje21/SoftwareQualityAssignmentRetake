@@ -189,7 +189,6 @@ def _handle_temporary_password(user: User) -> User | None:
     
     if success:
         clear_temporary_passwords(user.id)
-        print("Please login again with your new password.")
         time.sleep(2)
         return login()  # Recursive call - could be improved
     else:

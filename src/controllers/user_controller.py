@@ -1,4 +1,5 @@
 import sys
+import time
 from security.validation import Validation
 from models.user import get_user_by_username, create_user, update_password, list_users, User, delete_user_by_id, update_user_by_id, update_password_by_id, clear_temporary_passwords, get_user_password_by_username
 from logs.log import log_instance
@@ -18,65 +19,52 @@ def user_menu(user_data: User):
         print("|" + f"User Menu".center(75) + "|")
         print("----------------------------------------------------------------------------")
         number = 1
-
-        if is_authorized(user_data.role, "update_own_password"):
-            print(f"{number}. Change password")
-            change_pw_option = str(number)
-            number += 1
-        else:
-            change_pw_option = None
-
-        print(f"{number}. View profile")
+        
+        print(f"[{number}] View profile")
         view_profile_option = str(number)
         number += 1
 
         if is_authorized(user_data.role, "add_new_user"):
-            print(f"{number}. Create new user")
+            print(f"[{number}] Create new user")
             create_user_option = str(number)
             number += 1
         else:
             create_user_option = None
 
         if is_authorized(user_data.role, "view_users"):
-            print(f"{number}. List all users")
+            print(f"[{number}] List all users")
             list_users_option = str(number)
             number += 1
         else:
             list_users_option = None
 
         if is_authorized(user_data.role, "delete_user"):
-            print(f"{number}. Delete a user")
+            print(f"[{number}] Delete a user")
             delete_user_option = str(number)
             number += 1
         else:
             delete_user_option = None
 
         if is_authorized(user_data.role, "update_user"):
-            print(f"{number}. Update user account")
+            print(f"[{number}] Update user account")
             update_user_option = str(number)
             number += 1
         else:
             update_user_option = None
 
         if is_authorized(user_data.role, "reset_password"):
-            print(f"{number}. Reset user password")
+            print(f"[{number}] Reset user password")
             reset_pw_option = str(number)
             number += 1
         else:
             reset_pw_option = None
 
-        print(f"{number}. Exit user system, go back")
-        exit_option = str(number)
+        print(f"[{0}] Return to previous menu")
+        exit_option = str(0)
 
         choice = input("Choose an option: ").strip()
 
-        if choice == change_pw_option:
-            success = change_own_password(user_data)
-            if success:
-                sys.exit() 
-            else:
-                continue  
-        elif choice == view_profile_option:
+        if choice == view_profile_option:
             view_profile(user_data)
 
         elif choice == create_user_option:
@@ -122,7 +110,7 @@ def create_new_user(current_user):
     print("|" + "Creating a new user".center(75) + "|")
     print("----------------------------------------------------------------------------")
     
-    print("Username requirements: 3-20 characters, letters and numbers only.")
+    print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
         username = input("Enter username: ").strip().lower()
         if Validation.username_validation(username):
@@ -132,7 +120,7 @@ def create_new_user(current_user):
             else:
                 break
     
-    print("Password requirements: At least 8 characters, including uppercase, lowercase, number, and special character.")
+    print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character.")
     password = Validation.get_valid_input(
     prompt="Enter password: ",
     validation_fn=Validation.password_validation,
@@ -240,44 +228,54 @@ def delete_user_account(current_user):
     deletable_users = get_deletable_users(current_user)
     if not deletable_users:
         print("No users available for deletion.")
+        general_methods.hidden_input("Press Enter to return...")
         return
 
     print("\nUsers you are authorized to delete:")
     for user in deletable_users:
         print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
-    try:
+    # --- USER ID INPUT LOOP ---
+    while True:
         target_id_str = Validation.get_valid_input(
-            prompt="\nEnter the ID of the user you want to delete: ",
+            prompt="\nEnter the ID of the user you want to delete (or 'cancel' to stop): ",
             validation_fn=Validation.get_valid_id_input,
             username=current_user.username,
             field_name="id"
         )
 
+        if target_id_str is None:   # user typed "cancel"
+            print("Deletion cancelled.")
+            return
+
         target_id = int(target_id_str)
-    except ValueError:
-        print("Invalid input: ID must be a number.")
-        log_instance.log_invalid_input(current_user.username, "user_id", "Invalid ID input for deletion", True)
-        return
+        target_user = next((u for u in deletable_users if u.id == target_id), None)
 
-    target_user = next((u for u in deletable_users if u.id == target_id), None)
-    if not target_user:
-        print("You are not allowed to delete this user or user does not exist.")
-        return
+        if not target_user:
+            print("Invalid selection. Please try again.")
+            continue  # ask again
 
-    confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no): ").strip().lower()
-    if confirmation != "yes":
-        print("Cancelled.")
-        return
+        break  # valid target user selected
 
+    # --- CONFIRMATION STEP ---
+    while True:
+        confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no/cancel): ").strip().lower()
+        if confirmation in {"no", "cancel"}:
+            print("Deletion cancelled.")
+            return
+        if confirmation == "yes":
+            break
+        print("Invalid choice. Please type 'yes', 'no', or 'cancel'.")
+
+    # --- PERFORM DELETE ---
     success = delete_user_by_id(target_id)
     if success:
-        print(f" User '{target_user.username}' deleted successfully.")
+        print(f"User '{target_user.username}' deleted successfully.")
         log_instance.addlog(current_user.username, "User deleted", target_user.username, False)
     else:
         print("Failed to delete user.")
         log_instance.addlog(current_user.username, "User delete failed", target_user.username, True)
-    
+
     general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
 def get_editable_users(current_user):
@@ -308,66 +306,107 @@ def update_user_account(current_user):
     print("|" + "Update a User Account".center(75) + "|")
     print("----------------------------------------------------------------------------")
 
-    # Show all users that can be edited by the current user
+    # Show editable users
     editable_users = get_editable_users(current_user)
     if not editable_users:
         print("No users available to update.")
+        general_methods.hidden_input("Press Enter to return...")
         return
 
     for user in editable_users:
-        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} | Role: {user.role}")
+        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | "
+              f"Lastname: {user.lastname} | Role: {user.role}")
 
-    try:
-        target_id = int(input("\nEnter the ID of the user to update: ").strip())
-    except ValueError:
-        print("Invalid ID.")
-        return
-
-    target_user = next((u for u in editable_users if u.id == target_id), None)
-    if not target_user:
-        print("User not found or not editable by your role.")
-        return
-
-    print("\nWhich field do you want to update?")
-    print("1. Username")
-    print("2. First Name")
-    print("3. Last Name")
-    print("0. Cancel")
-
-    choice = input("Choose an option: ").strip()
-
-    if choice == '1':
-        print("Username requirements: 3-20 characters, letters and numbers only.")
-        new_username = input("Enter new username: ").strip().lower()
-        if not Validation.username_validation(new_username):
-            print("Invalid username format.")
+    # --- USER SELECTION LOOP ---
+    while True:
+        target_id_str = Validation.get_valid_input(
+            prompt="\nEnter the ID of the user you want to update (or 'cancel' to stop): ",
+            validation_fn=Validation.get_valid_id_input,
+            username=current_user.username,
+            field_name="id"
+        )
+        if target_id_str is None:  # cancel
+            print("Update cancelled.")
             return
-        if get_user_by_username(new_username):
-            print("Username already exists. Please choose another.")
+
+        target_id = int(target_id_str)
+        target_user = next((u for u in editable_users if u.id == target_id), None)
+
+        if not target_user:
+            print("Invalid selection. Please try again.")
+            continue
+        break
+
+    # --- FIELD SELECTION LOOP ---
+    while True:
+        print("\nWhich field do you want to update?")
+        print("1. Username")
+        print("2. First Name")
+        print("3. Last Name")
+        print("0. Cancel")
+
+        choice = input("Choose an option: ").strip()
+
+        update_data = {}
+
+        if choice == '1':
+            # Username update behavior same as CREATE
+            print("Username requirements: 8-10 characters, letters and numbers only.")
+            while True:
+                new_username = input("Enter new username (or 'cancel' to stop): ").strip().lower()
+
+                if new_username == "cancel":
+                    print("Update cancelled.")
+                    return
+
+                if not Validation.username_validation(new_username):
+                    continue  # format invalid → retry
+
+                if get_user_by_username(new_username):
+                    print("Username already exists. Please try again.")
+                    log_instance.log_invalid_input(current_user.username, "username",
+                                                   "Attempt to create duplicate username", False)
+                    continue  # duplicate → retry
+
+                update_data = {"username": new_username}
+                break
+            break
+
+        elif choice == '2':
+            new_first = Validation.get_valid_input(
+                prompt="Enter new first name (or 'cancel' to stop): ",
+                validation_fn=Validation.name_validation,
+                username=current_user.username,
+                field_name="first name"
+            )
+            if new_first is None:
+                print("Update cancelled.")
+                return
+            update_data = {"firstname": new_first.title()}
+            break
+
+        elif choice == '3':
+            new_last = Validation.get_valid_input(
+                prompt="Enter new last name (or 'cancel' to stop): ",
+                validation_fn=Validation.name_validation,
+                username=current_user.username,
+                field_name="last name"
+            )
+            if new_last is None:
+                print("Update cancelled.")
+                return
+            update_data = {"lastname": new_last.title()}
+            break
+
+        elif choice == '0':
+            print("Update cancelled.")
             return
-        update_data = {"username": new_username}
 
-    elif choice == '2':
-        new_first = input("Enter new first name: ").strip().title()
-        if not Validation.name_validation(new_first, current_user.username):
-            print("Invalid first name.")
-            return
-        update_data = {"firstname": new_first}
+        else:
+            print("Invalid option. Please try again.")
+            continue
 
-    elif choice == '3':
-        new_last = input("Enter new last name: ").strip().title()
-        if not Validation.name_validation(new_last, current_user.username):
-            print("Invalid last name.")
-            return
-        update_data = {"lastname": new_last}
-
-    elif choice == '0':
-        print("Cancelled.")
-        return
-    else:
-        print("Invalid choice.")
-        return
-
+    # --- APPLY UPDATE ---
     success = update_user_by_id(target_id, update_data)
     if success:
         print("User updated successfully.")
@@ -375,7 +414,7 @@ def update_user_account(current_user):
     else:
         print("Failed to update user.")
         log_instance.addlog(current_user.username, "User update failed", str(update_data), True)
-    
+
     general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
 def change_own_password(current_user) -> bool:
@@ -401,11 +440,11 @@ def change_own_password(current_user) -> bool:
             log_instance.log_invalid_input(current_user.username, "password", "Incorrect current password")
 
     else:
-        print("Too many incorrect current password attempts. You are now logged out.")
+        print("Too many incorrect current password attempts. Logging out...")
         log_instance.addlog(current_user.username, "Password change failed", "Too many old password attempts", True)
-        return False
+        time.sleep(1)
+        return True  # force logout
 
-    # Daarna: 3 pogingen voor nieuw wachtwoord (via helper)
     new_password = Validation.get_valid_input(
         "Enter your new password: ",
         Validation.password_validation,
@@ -417,50 +456,72 @@ def change_own_password(current_user) -> bool:
     if success:
         log_instance.addlog(current_user.username, "Password changed successfully", "", False)
         print("Password changed successfully. You will now be logged out.")
-        sys.exit()
+        time.sleep(1)
         return True
     else:
         log_instance.addlog(current_user.username, "Password change failed", "Database error", True)
-        print("Password change failed. You are now logged out.")
+        print("Password change failed. Returning to menu.")
+        time.sleep(1)
         return False
-    
-#TODO: Check for the required role permissions before allowing password reset
+
 def reset_user_password(current_user):
     require_authorization(current_user, 'reset_password')
-    print("\n--- Reset User Password ---")
+    general_methods.clear_console()
+
+    print("----------------------------------------------------------------------------")
+    print("|" + "Reset User Password".center(75) + "|")
+    print("----------------------------------------------------------------------------")
 
     editable_users = get_editable_users(current_user)
     if not editable_users:
         print("No users available for password reset.")
+        general_methods.hidden_input("Press Enter to return...")
         return
 
+    # Display eligible users
     for user in editable_users:
         print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
-    try:
-        target_id = int(input("\nEnter the ID of the user to reset password: ").strip())
-    except ValueError:
-        print("Invalid ID.")
-        return
+    # ----- ID INPUT LOOP -----
+    while True:
+        user_input = input("\nEnter the ID of the user (or type 'cancel' to stop): ").strip()
 
-    target_user = next((u for u in editable_users if u.id == target_id), None)
-    if not target_user:
-        print("User not found or not editable by your role.")
-        return
+        if user_input.lower() == "cancel":
+            print("Password reset cancelled.")
+            return
 
-    # Nieuw wachtwoord vragen en valideren
+        # Use existing ID validator (shared logic)
+        if not Validation.get_valid_id_input(user_input, current_user.username):
+            continue  # validation prints its own message, just re-prompt
+
+        target_id = int(user_input)
+        target_user = next((u for u in editable_users if u.id == target_id), None)
+
+        if not target_user:
+            print("User not found or not editable by your role. Try again.")
+            continue
+        break  # valid user -- exit loop
+
+    # ----- PASSWORD INPUT -----
     new_pw = Validation.get_valid_input(
-        "Enter new temporary password: ",
+        "Enter new temporary password (or type 'cancel' to stop): ",
         Validation.password_validation,
         current_user.username,
         "password"
-        )
+    )
 
+    if new_pw is None:  # user typed cancel
+        print("Password reset cancelled.")
+        return
+
+    # ----- UPDATE PASSWORD -----
     success = update_password_by_id(target_id, new_pw)
 
     if success:
-        print("Password reset successfully.")
+        print(f"Temporary password has been reset for user '{target_user.username}'.")
         log_instance.addlog(current_user.username, "Password reset", f"Target: {target_user.username}", False)
     else:
         print("Password reset failed.")
-        log_instance.addlog(current_user.username, "Password reset failed", f"Target: {target_user.username}", False)
+        log_instance.addlog(current_user.username, "Password reset failed", f"Target: {target_user.username}", True)
+
+    general_methods.hidden_input("\nPress Enter to return...")
