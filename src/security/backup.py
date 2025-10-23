@@ -7,6 +7,7 @@ import random
 import string
 import zipfile
 from datetime import datetime
+import re
 
 # Local application imports
 from controllers.rolecheck import is_authorized
@@ -15,6 +16,18 @@ from logs.log import log_instance
 from models.db import open_connection
 from security.encryption import load_symmetric_key, encrypt_message, decrypt_message
 from security.validation import Validation
+
+
+# --- Helper functions for safe SQL identifier handling ---
+def is_safe_identifier(name: str) -> bool:
+    """Allow only simple SQLite identifiers (letters, digits, underscore),
+    starting with a letter or underscore, and not a system table."""
+    return bool(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name)) and not name.startswith("sqlite_")
+
+
+def quote_ident(name: str) -> str:
+    """Quote an SQL identifier safely for SQLite by doubling internal quotes."""
+    return '"' + name.replace('"', '""') + '"'
 
 
 class BackupManager:
@@ -568,25 +581,31 @@ class BackupManager:
         cur_current = conn_current.cursor()
         cur_backup = conn_backup.cursor()
 
-        # STEP 3: Copy tables except logs
-        tables_to_skip = {"logs"}
+        # STEP 3: Copy tables except logs (and system tables)
+        tables_to_skip = {"logs", "sqlite_sequence"}
 
         cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = [row[0] for row in cur_backup.fetchall()]
 
         for table in tables:
-            if table not in tables_to_skip:
-                # wipe current table
-                cur_current.execute(f'DELETE FROM "{table}"')
-                # restore data
-                cur_backup.execute(f'SELECT * FROM "{table}"')
-                rows = cur_backup.fetchall()
-                if rows:
-                    placeholders = ", ".join("?" * len(rows[0]))
-                    cur_current.executemany(
-                        f'INSERT INTO "{table}" VALUES ({placeholders})',
-                        rows
-                    )
+            # Validate identifier and skip disallowed/system tables
+            if not is_safe_identifier(table) or table in tables_to_skip:
+                continue
+
+            qname = quote_ident(table)
+
+            # wipe current table
+            cur_current.execute(f'DELETE FROM {qname}')
+
+            # restore data
+            cur_backup.execute(f'SELECT * FROM {qname}')
+            rows = cur_backup.fetchall()
+            if rows:
+                placeholders = ", ".join("?" * len(rows[0]))
+                cur_current.executemany(
+                    f'INSERT INTO {qname} VALUES ({placeholders})',
+                    rows
+                )
 
         # STEP 4: Commit & close
         conn_current.commit()
