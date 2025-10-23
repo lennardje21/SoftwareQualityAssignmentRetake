@@ -19,10 +19,6 @@ def user_menu(user_data: User):
         print("|" + f"User Menu".center(75) + "|")
         print("----------------------------------------------------------------------------")
         number = 1
-        
-        print(f"[{number}] View profile")
-        view_profile_option = str(number)
-        number += 1
 
         if is_authorized(user_data.role, "add_new_user"):
             print(f"[{number}] Create new user")
@@ -64,10 +60,7 @@ def user_menu(user_data: User):
 
         choice = input("Choose an option: ").strip()
 
-        if choice == view_profile_option:
-            view_profile(user_data)
-
-        elif choice == create_user_option:
+        if choice == create_user_option:
             create_new_user(user_data)
 
         elif choice == list_users_option:
@@ -127,6 +120,9 @@ def create_new_user(current_user):
     username=current_user.username,
     field_name="password"
     )
+    if password == None:
+        return
+    
 
     allowed_roles = get_permitted_roles(current_user.role)
     # Build a mapping from both names and numbers → role names
@@ -179,7 +175,12 @@ def show_all_users(current_user):
     users = list_users()
     if users:
         for user in users:
-            print(f"Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} | Role: {user.role} | Created on: {user.registration_date}")
+            print(f"ID: {user.id}")
+            print(f"Username: {user.username}")
+            print(f"Firstname: {user.firstname}")
+            print(f"Lastname: {user.lastname}")
+            print(f"Role: {user.role}")
+            print("----------------------------------------------------------------------------")
     else:
         print("No users found.")
     
@@ -314,8 +315,12 @@ def update_user_account(current_user):
         return
 
     for user in editable_users:
-        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | "
-              f"Lastname: {user.lastname} | Role: {user.role}")
+        print(f"ID: {user.id}")
+        print(f"Username: {user.username}")
+        print(f"Firstname: {user.firstname}")
+        print(f"Lastname: {user.lastname}")
+        print(f"Role: {user.role}")
+        print("----------------------------------------------------------------------------")
 
     # --- USER SELECTION LOOP ---
     while True:

@@ -78,6 +78,7 @@ def _handle_super_admin_login(password: str) -> User | None:
 def _validate_credentials_format(username: str, password: str) -> bool:
     """Validate the format of username and password."""
     if not Validation.username_validation(username) or not Validation.password_validation(password, username):
+        general_methods.clear_console()
         print("Login failed.")
         log_instance.log_invalid_input(username, "login", "Invalid login format")
         time.sleep(2)
