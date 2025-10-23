@@ -75,14 +75,6 @@ def traveller_menu(current_user):
             print("Invalid choice. Please try again.")
             time.sleep(1)
 
-def get_valid_input(prompt, validation_fn, username, field_name):
-    while True:
-        value = input(prompt).strip()
-        if validation_fn(value, username):
-            return value
-        log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
-        print(f"Invalid {field_name}. Please try again.")
-
 def show_travellers(current_user):
     require_authorization(current_user, 'show_traveller')
     general_methods.clear_console()
