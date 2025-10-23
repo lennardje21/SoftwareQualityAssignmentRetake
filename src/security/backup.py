@@ -562,7 +562,7 @@ class BackupManager:
     @staticmethod
     def restore_database_from_backup(backup_path, current_user):
         """
-        Restore database tables from a backup, excluding logs.
+        Restore database tables from a backup, excluding logs and system tables (those starting with 'sqlite_').
         Also logs the restore event afterwards.
         """
         base_dir, db_path, backup_dir = BackupManager.get_paths()
