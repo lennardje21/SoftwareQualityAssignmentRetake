@@ -395,7 +395,7 @@ def update_scooter_controller(current_user):
         new_serial = Validation.get_valid_input(
             prompt="Serial Number (or 'cancel'): ",
             validation_fn=lambda serial, user: unique_serial_number_validation(
-                serial, username, exclude_serial=getattr(scooter, 'serial_number', '')
+                serial, user, exclude_serial=getattr(scooter, 'serial_number', '')
             ),
             username=username,
             field_name="serial number"
