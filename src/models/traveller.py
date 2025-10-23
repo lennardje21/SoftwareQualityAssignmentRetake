@@ -231,6 +231,114 @@ def get_traveller_by_email(email: str):
     finally:
         close_connection(conn)
 
+def get_traveller_by_phone(phone: str):
+    conn = open_connection()
+    cursor = conn.cursor()
+    key = load_symmetric_key()
+
+    try:
+        cursor.execute('SELECT id, phone_number FROM travellers')
+        rows = cursor.fetchall()
+
+        matched_id = None
+        for row in rows:
+            traveller_id = row[0]
+            phone_dec = decrypt_message(row[1], key)
+            if phone_dec == phone:
+                matched_id = traveller_id
+                break
+
+        if not matched_id:
+            return None
+
+        cursor.execute('''
+            SELECT id, first_name, last_name, date_of_birth, gender, street,
+                   house_number, zip_code, city, email, phone_number, license_number, registration_date
+            FROM travellers
+            WHERE id = ?
+        ''', (matched_id,))
+        row = cursor.fetchone()
+
+        if row:
+            traveller = Traveller(
+                id=row[0],
+                first_name=decrypt_message(row[1], key),
+                last_name=decrypt_message(row[2], key),
+                date_of_birth=decrypt_message(row[3], key),
+                gender=decrypt_message(row[4], key),
+                streetname=decrypt_message(row[5], key),
+                house_number=decrypt_message(row[6], key),
+                zipcode=decrypt_message(row[7], key),
+                city=decrypt_message(row[8], key),
+                email=decrypt_message(row[9], key),
+                phone_number=decrypt_message(row[10], key),
+                license_number=decrypt_message(row[11], key),
+                registration_date=decrypt_message(row[12], key)
+            )
+            return traveller
+
+        return None
+
+    except Exception as e:
+        print(f"An error occurred while fetching traveller by phone: {e}")
+        return None
+    finally:
+        close_connection(conn)
+
+def get_traveller_by_license(license_number: str):
+    conn = open_connection()
+    cursor = conn.cursor()
+    key = load_symmetric_key()
+
+    try:
+        cursor.execute('SELECT id, license_number FROM travellers')
+        rows = cursor.fetchall()
+
+        matched_id = None
+        for row in rows:
+            traveller_id = row[0]
+            license_dec = decrypt_message(row[1], key)
+            if license_dec.lower() == license_number.lower():
+                matched_id = traveller_id
+                break
+
+        if not matched_id:
+            return None
+
+        cursor.execute('''
+            SELECT id, first_name, last_name, date_of_birth, gender, street,
+                   house_number, zip_code, city, email, phone_number, license_number, registration_date
+            FROM travellers
+            WHERE id = ?
+        ''', (matched_id,))
+        row = cursor.fetchone()
+
+        if row:
+            traveller = Traveller(
+                id=row[0],
+                first_name=decrypt_message(row[1], key),
+                last_name=decrypt_message(row[2], key),
+                date_of_birth=decrypt_message(row[3], key),
+                gender=decrypt_message(row[4], key),
+                streetname=decrypt_message(row[5], key),
+                house_number=decrypt_message(row[6], key),
+                zipcode=decrypt_message(row[7], key),
+                city=decrypt_message(row[8], key),
+                email=decrypt_message(row[9], key),
+                phone_number=decrypt_message(row[10], key),
+                license_number=decrypt_message(row[11], key),
+                registration_date=decrypt_message(row[12], key)
+            )
+            return traveller
+
+        return None
+
+    except Exception as e:
+        print(f"An error occurred while fetching traveller by license number: {e}")
+        return None
+    finally:
+        close_connection(conn)
+
 def update_traveller(customer_id, fields: dict):
     conn = open_connection()
     cursor = conn.cursor()
