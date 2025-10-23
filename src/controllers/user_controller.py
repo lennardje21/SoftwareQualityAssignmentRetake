@@ -1,4 +1,5 @@
 import sys
+import time
 from security.validation import Validation
 from models.user import get_user_by_username, create_user, update_password, list_users, User, delete_user_by_id, update_user_by_id, update_password_by_id, clear_temporary_passwords, get_user_password_by_username
 from logs.log import log_instance
@@ -18,14 +19,7 @@ def user_menu(user_data: User):
         print("|" + f"User Menu".center(75) + "|")
         print("----------------------------------------------------------------------------")
         number = 1
-
-        if is_authorized(user_data.role, "update_own_password"):
-            print(f"[{number}] Change password")
-            change_pw_option = str(number)
-            number += 1
-        else:
-            change_pw_option = None
-
+        
         print(f"[{number}] View profile")
         view_profile_option = str(number)
         number += 1
@@ -70,13 +64,7 @@ def user_menu(user_data: User):
 
         choice = input("Choose an option: ").strip()
 
-        if choice == change_pw_option:
-            success = change_own_password(user_data)
-            if success:
-                sys.exit() 
-            else:
-                continue  
-        elif choice == view_profile_option:
+        if choice == view_profile_option:
             view_profile(user_data)
 
         elif choice == create_user_option:
@@ -290,7 +278,6 @@ def delete_user_account(current_user):
 
     general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
-
 def get_editable_users(current_user):
     all_users = list_users()
     editable = []
@@ -430,8 +417,6 @@ def update_user_account(current_user):
 
     general_methods.hidden_input("\nPress Enter to return to the user menu...")
 
-
-
 def change_own_password(current_user) -> bool:
     require_authorization(current_user, 'update_own_password')
  
@@ -455,9 +440,10 @@ def change_own_password(current_user) -> bool:
             log_instance.log_invalid_input(current_user.username, "password", "Incorrect current password")
 
     else:
-        print("Too many incorrect current password attempts. You are now logged out.")
+        print("Too many incorrect current password attempts. Logging out...")
         log_instance.addlog(current_user.username, "Password change failed", "Too many old password attempts", True)
-        return False
+        time.sleep(1)
+        return True  # force logout
 
     new_password = Validation.get_valid_input(
         "Enter your new password: ",
@@ -470,12 +456,13 @@ def change_own_password(current_user) -> bool:
     if success:
         log_instance.addlog(current_user.username, "Password changed successfully", "", False)
         print("Password changed successfully. You will now be logged out.")
+        time.sleep(1)
         return True
     else:
         log_instance.addlog(current_user.username, "Password change failed", "Database error", True)
-        print("Password change failed. You are now logged out.")
+        print("Password change failed. Returning to menu.")
+        time.sleep(1)
         return False
-
 
 def reset_user_password(current_user):
     require_authorization(current_user, 'reset_password')

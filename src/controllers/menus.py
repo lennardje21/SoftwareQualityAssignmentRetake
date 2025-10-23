@@ -27,7 +27,9 @@ def service_engineer_menu(user_data):
 
     if choice == '1':
         if is_authorized(user_data.role, "update_own_password"):
-            change_own_password(user_data)
+            success = change_own_password(user_data)
+            if success:
+                return False
         else:
             print("You are not authorized to perform this action.")
             time.sleep(0.5)
@@ -80,7 +82,9 @@ def system_administrator_menu(user_data):
     general_methods.clear_console()
 
     if choice == '1':
-        change_own_password(user_data)
+        log_out = change_own_password(user_data)
+        if log_out:
+            return False
     elif choice == '2':
         view_profile(user_data)
     elif choice == '3':
@@ -103,7 +107,7 @@ def system_administrator_menu(user_data):
     elif choice == '0':
         print("Exiting the system. Goodbye!")
         time.sleep(0.5)
-        return sys.exit()
+        sys.exit()
     else:
         general_methods.clear_console()
         print("Invalid choice. Please try again.")
