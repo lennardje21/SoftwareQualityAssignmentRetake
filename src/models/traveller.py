@@ -244,7 +244,7 @@ def get_traveller_by_phone(phone: str):
         for row in rows:
             traveller_id = row[0]
             phone_dec = decrypt_message(row[1], key)
-            if phone_dec.lower() == phone.lower():
+            if phone_dec == phone:
                 matched_id = traveller_id
                 break
 
