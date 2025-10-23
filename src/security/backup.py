@@ -592,7 +592,8 @@ class BackupManager:
             if not is_safe_identifier(table) or table in tables_to_skip:
                 continue
 
-            qname = quote_ident(table)
+            # Use the validated identifier directly (no quoting needed)
+            qname = table
 
             # wipe current table
             cur_current.execute(f'DELETE FROM {qname}')
