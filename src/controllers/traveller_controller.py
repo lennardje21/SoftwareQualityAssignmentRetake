@@ -46,7 +46,6 @@ def get_valid_input(prompt, validation_fn, username, field_name):
         value = input(prompt).strip()
         if validation_fn(value, username):
             return value
-        attempts += 1
         log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
         print(f"Invalid {field_name}. Please try again.")
 
