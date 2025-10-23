@@ -5,15 +5,6 @@ from datetime import datetime
 class Validation:
 
     @staticmethod
-    def get_valid_id_input(id: str, username: str):
-        if re.fullmatch(r"[1-9]\d{0,7}", id):  # 1 t/m 99999999 (max 8 numbers, no leading zero)
-            return True
-
-        print(f"Invalid ID: {id}. Must be a positive number ≤ 99999999 without leading zeros.")
-        log_instance.log_invalid_input(username, "id", f"Invalid ID input: {id}")
-        return False
-
-    @staticmethod
     def get_valid_input(prompt, validation_fn, username, field_name):
         while True:
             value = input(prompt).strip()
@@ -61,7 +52,6 @@ class Validation:
         print(f"Invalid ID: {id}. Must be a positive number ≤ 99999999 without leading zeros.")
         log_instance.log_invalid_input(username, "id", f"Invalid ID input: {id}")
         return False
-
 
     @staticmethod
     def name_validation(name, username):
