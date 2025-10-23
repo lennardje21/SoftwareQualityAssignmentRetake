@@ -120,7 +120,7 @@ def create_new_user(current_user):
     username=current_user.username,
     field_name="password"
     )
-    if password == None:
+    if password is None:
         return
     allowed_roles = get_permitted_roles(current_user.role)
     # Build a mapping from both names and numbers → role names
