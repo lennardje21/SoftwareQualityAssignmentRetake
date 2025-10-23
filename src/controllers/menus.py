@@ -107,7 +107,7 @@ def system_administrator_menu(user_data):
     elif choice == '0':
         print("Exiting the system. Goodbye!")
         time.sleep(0.5)
-        return sys.exit()
+        sys.exit()
     else:
         general_methods.clear_console()
         print("Invalid choice. Please try again.")
