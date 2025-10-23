@@ -440,10 +440,10 @@ def change_own_password(current_user) -> bool:
             log_instance.log_invalid_input(current_user.username, "password", "Incorrect current password")
 
     else:
-        print("Too many incorrect current password attempts. Exiting system..")
+        print("Too many incorrect current password attempts. Logging out...")
         log_instance.addlog(current_user.username, "Password change failed", "Too many old password attempts", True)
         time.sleep(1)
-        sys.exit()
+        return True  # force logout
 
     new_password = Validation.get_valid_input(
         "Enter your new password: ",
