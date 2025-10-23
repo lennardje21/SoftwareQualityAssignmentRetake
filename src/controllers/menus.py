@@ -69,10 +69,9 @@ def system_administrator_menu(user_data):
     print("[2] View Profile")
     print("[3] Traveller Management")
     print("[4] Scooter Management")
-    print("[5] List All Users")
-    print("[6] User Management")
-    print("[7] View Logs")
-    print("[8] Backup Management")
+    print("[5] User Management")
+    print("[6] View Logs")
+    print("[7] Backup Management")
     print("[10] Logout")
     print("[0] Exit")
     print("----------------------------------------------------------------------------")
@@ -89,14 +88,12 @@ def system_administrator_menu(user_data):
     elif choice == '4':
         scooter_menu(user_data)
     elif choice == '5':
-        show_all_users(user_data)
-    elif choice == '6':
         user_menu(user_data)
-    elif choice == '7':
+    elif choice == '6':
         require_authorization(user_data, 'view_logs')
         logger = LogFunction()
         logger.show_logs(user_data)
-    elif choice == '8':  # or whichever number backup was
+    elif choice == '7':  # or whichever number backup was
         backup_management_menu(user_data)
 
     elif choice == '10':

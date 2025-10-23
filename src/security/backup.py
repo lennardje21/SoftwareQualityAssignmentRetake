@@ -250,11 +250,13 @@ class BackupManager:
 
         if not is_authorized(current_user.role, 'system_administrator_restore_backup'):
             print("You do not have permission to restore backups.")
+            general_methods.hidden_input("\nPress Enter to return to the backup menu...")
             return
 
         # Verify there is a code for this admin
         if not BackupManager.check_for_restore_code(current_user):
             print("No restore code linked to your account. Please contact a super administrator.")
+            general_methods.hidden_input("\nPress Enter to return to the backup menu...")
             return
 
         MAX_RESTORE_CODE_ATTEMPTS = 3
@@ -264,11 +266,16 @@ class BackupManager:
 
         matching_index = None
         backup_filename = None
+        general_methods.clear_console()
+        print("----------------------------------------------------------------------------")
+        print("|" + "Restore Backup".center(75) + "|")
+        print("----------------------------------------------------------------------------")
 
         while attempts < MAX_RESTORE_CODE_ATTEMPTS:
             code_input = input("\nEnter your restore code (or 'c' to cancel): ").strip()
             if code_input.lower() == 'c':
                 print("Backup restoration cancelled.")
+                general_methods.hidden_input("\nPress Enter to return to the backup menu...")
                 return
 
             match = store.find_matching_code(code_input, current_user.id)
