@@ -276,7 +276,7 @@ def deleting_scooter(current_user):
             return
 
         # Find scooter locally first to avoid useless DB calls
-        scooter = next((x for x in scooters if getattr(x, 'serial_number', '').lower() == serial_input.lower()), None)
+        scooter = next((x for x in scooters if getattr(x, 'serial_number', '') == serial_input), None)
         if not scooter:
             print("No scooter found with that serial number. Please try again.")
             log_instance.log_invalid_input(username, "serial_number", "Serial not found for deletion")
