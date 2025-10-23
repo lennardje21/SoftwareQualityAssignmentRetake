@@ -582,7 +582,7 @@ class BackupManager:
         cur_backup = conn_backup.cursor()
 
         # STEP 3: Copy tables except logs (and system tables)
-        tables_to_skip = {"logs", "sqlite_sequence"}
+        tables_to_skip = {"logs"}
 
         cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = [row[0] for row in cur_backup.fetchall()]
