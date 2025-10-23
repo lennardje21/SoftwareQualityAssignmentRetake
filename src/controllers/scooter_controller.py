@@ -103,7 +103,7 @@ def add_scooter(current_user):
     # 3. SERIAL NUMBER (UNIQUE)
     serial_number = Validation.get_valid_input(
         prompt="Serial Number (or type 'cancel'): ",
-        validation_fn=lambda serial, user: unique_serial_number_validation(serial, username),
+        validation_fn=lambda serial, user: unique_serial_number_validation(serial, user),
         username=username,
         field_name="serial number"
     )
