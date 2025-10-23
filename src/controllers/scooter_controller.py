@@ -1,11 +1,25 @@
 import sys
 import time
-from models.scooter import create_scooter, list_scooters , get_scooter_by_serial_number, delete_scooter, update_scooter, search_scooters_partial
+from models.scooter import create_scooter, list_scooters, get_scooter_by_serial_number, delete_scooter, update_scooter, search_scooters_partial
 from security.validation import Validation
 from logs.log import log_instance
 from controllers.rolecheck import is_authorized, require_authorization
 from security.encryption import load_symmetric_key
 from helpers.general_methods import general_methods
+
+# Unique validation function for scooter serial number
+def unique_serial_number_validation(serial_number, username, exclude_serial=None):
+    """Validate serial number format and check for uniqueness."""
+    if not Validation.serial_number_validation(serial_number, username):
+        return False
+    # UE-1: Allow unchanged serial during updates
+    if exclude_serial and serial_number.lower() == exclude_serial.lower():
+        return True
+    if get_scooter_by_serial_number(serial_number):
+        print("A scooter with this serial number already exists.")
+        log_instance.log_invalid_input(username, "serial_number", "Duplicate serial number")
+        return False
+    return True
 
 def scooter_menu(current_user):
    while True:
@@ -59,67 +73,119 @@ def scooter_menu(current_user):
             time.sleep(1)
 
 def add_scooter(current_user):
-
-    general_methods.clear_console()
-    print("----------------------------------------------------------------------------")
-    print("|" + "Add a New Scooter".center(75) + "|")
-    print("----------------------------------------------------------------------------")
-
     require_authorization(current_user, 'add_scooter')
-    
+    general_methods.clear_console()
+
+    print("----------------------------------------------------------------------------")
+    print("|" + "Add Scooter".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     username = current_user.username
-    
-    brand = Validation.get_valid_input("Brand: ", Validation.brand_validation, username, "brand")
-    model = Validation.get_valid_input("Model: ", Validation.model_validation, username, "model")
-    
-    for attempt in range(3):
-        serial_number = input("Serial Number (10–17 alphanumeric): ").strip()
-        
-        if not Validation.serial_number_validation(serial_number, username):
-            continue
-        
-        if get_scooter_by_serial_number(serial_number):
-            print("Serial number already exists. Please try again.")
-            log_instance.log_invalid_input(username, "serial_number", "Attempt to create duplicate serial number")
-            continue
-        break
-    else:
-        print("Too many failed serial number attempts. Returning to menu.")
-        log_instance.addlog(username, "Scooter creation cancelled", "Too many failed serial number attempts", False)
-        time.sleep(1)
-        return
-    top_speed = Validation.get_valid_input("Top Speed (1–300): ", Validation.top_speed_validation, username, "top speed")
-    battery_capacity = Validation.get_valid_input("Battery Capacity (50–2000): ", Validation.battery_capacity_validation, username, "battery capacity")
-    soc = Validation.get_valid_input("State of Charge (0–100): ", Validation.soc_single_value, username, "state of charge")
+
+    # 1. BRAND
+    brand = Validation.get_valid_input(
+        prompt="Brand (or type 'cancel'): ",
+        validation_fn=Validation.brand_validation,
+        username=username,
+        field_name="brand"
+    )
+    if brand is None: return
+
+    # 2. MODEL
+    model = Validation.get_valid_input(
+        prompt="Model (or type 'cancel'): ",
+        validation_fn=Validation.model_validation,
+        username=username,
+        field_name="model"
+    )
+    if model is None: return
+
+    # 3. SERIAL NUMBER (UNIQUE)
+    serial_number = Validation.get_valid_input(
+        prompt="Serial Number (or type 'cancel'): ",
+        validation_fn=lambda serial, user: unique_serial_number_validation(serial, user),
+        username=username,
+        field_name="serial number"
+    )
+    if serial_number is None: return
+
+    # 4. TOP SPEED
+    top_speed = Validation.get_valid_input(
+        prompt="Top Speed km/h (or type 'cancel'): ",
+        validation_fn=Validation.top_speed_validation,
+        username=username,
+        field_name="top speed"
+    )
+    if top_speed is None: return
+
+    # 5. BATTERY CAPACITY
+    battery_capacity = Validation.get_valid_input(
+        prompt="Battery Capacity 0–100 (or type 'cancel'): ",
+        validation_fn=Validation.soc_single_value,
+        username=username,
+        field_name="battery capacity"
+    )
+    if battery_capacity is None: return
+
+    # 6. SOC
+    soc = Validation.get_valid_input(
+        prompt="State of Charge 0–100 (or type 'cancel'): ",
+        validation_fn=Validation.soc_single_value,
+        username=username,
+        field_name="state of charge"
+    )
+    if soc is None: return
+
+    # 7 & 8. SOC RANGE (SR-1)
     soc_range_min, soc_range_max = Validation.get_valid_range_input(
-        "Target SOC Range MIN (0–100): ",
-        "Target SOC Range MAX (0–100): ",
-        Validation.soc_range_validation,
-        username,
-        "Target SOC Range"
+        prompt_min="Target SOC Range MIN 0–100 (or 'cancel'): ",
+        prompt_max="Target SOC Range MAX 0–100 (or 'cancel'): ",
+        validation_fn=Validation.soc_range_validation,
+        username=username,
+        field_name="target SOC range"
     )
+    if soc_range_min is None or soc_range_max is None: return
 
-    # Locatie (exact 5 decimalen, binnen Rotterdam)
+    # 9 & 10. LOCATION (LOC-R1)
     location_latitude, location_longitude = Validation.get_valid_coordinates(
-        "Latitude (format XX.XXXXX): ",
-        "Longitude (format X.XXXXX): ",
-        Validation.location_validation,
-        username
+        prompt_lat="Latitude (51.85000–52.05000, or 'cancel'): ",
+        prompt_lon="Longitude (4.40000–4.55000, or 'cancel'): ",
+        validation_fn=Validation.location_validation,
+        username=username
     )
+    if location_latitude is None or location_longitude is None: return
 
-    # TODO: controleer voor inputvalidation boolean
+    # 11. OUT OF SERVICE (yes/no → ST-A)
     out_of_service = Validation.get_valid_input(
-        "Out of Service? (yes/no): ",
-        Validation.yes_no_validation,
-        username,
-        "out_of_service"
+        prompt="Out of Service? (yes/no, or 'cancel'): ",
+        validation_fn=Validation.yes_no_validation,
+        username=username,
+        field_name="out_of_service"
     )
-    mileage = Validation.get_valid_input("Mileage: ", Validation.mileage_validation, username, "mileage")
-    last_maintenance_date = Validation.get_valid_input("Last Maintenance Date (YYYY-MM-DD): ", Validation.last_maintenance_date_validation, username, "maintenance date")
+    if out_of_service is None: return
+    out_of_service = (out_of_service.lower() == "yes")  # ST-A
 
-    #Proberen scooter aan te maken
+    # 12. MILEAGE
+    mileage = Validation.get_valid_input(
+        prompt="Mileage (or 'cancel'): ",
+        validation_fn=Validation.mileage_validation,
+        username=username,
+        field_name="mileage"
+    )
+    if mileage is None: return
+
+    # 13. LAST MAINTENANCE DATE
+    last_maintenance_date = Validation.get_valid_input(
+        prompt="Last Maintenance Date YYYY-MM-DD (or 'cancel'): ",
+        validation_fn=Validation.last_maintenance_date_validation,
+        username=username,
+        field_name="maintenance date"
+    )
+    if last_maintenance_date is None: return
+
+    # --- FINAL DATABASE CALL ---
     try:
-        result = create_scooter(
+        success = create_scooter(
             brand=brand,
             model=model,
             serial_number=serial_number,
@@ -134,17 +200,18 @@ def add_scooter(current_user):
             mileage=int(mileage),
             last_maintenance_date=last_maintenance_date
         )
-        if result:
-            log_instance.addlog(username, "Scooter created", serial_number, False)
-            print(" Scooter registered successfully.")
+        if success:
+            print("\nScooter created successfully.")
+            log_instance.addlog(username, "Scooter created", f"Serial: {serial_number}", False)
         else:
-            log_instance.addlog(username, "Scooter creation failed", serial_number, True)
-            print("Failed to register scooter.")
+            print("\nFailed to create scooter.")
+            log_instance.addlog(username, "Scooter creation failed", f"Serial: {serial_number}", True)
     except Exception as e:
+        print("\nAn error occurred while creating the scooter.")
         log_instance.addlog(username, "Scooter creation exception", str(e), True)
-        print("An error occurred while registering the scooter.")
 
-    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+    general_methods.hidden_input("\nPress Enter to return...")
+
 
 def show_scooters(current_user):
     require_authorization(current_user, 'show_scooter')
@@ -178,219 +245,243 @@ def show_scooters(current_user):
 def deleting_scooter(current_user):
     require_authorization(current_user, 'delete_scooter')
     general_methods.clear_console()
+
     print("----------------------------------------------------------------------------")
-    print("|" + "Delete a Scooter".center(75) + "|")
+    print("|" + "Delete Scooter".center(75) + "|")
     print("----------------------------------------------------------------------------")
-
-    key = load_symmetric_key()
-    
-    serial_number = Validation.get_valid_input(
-        "Enter the serial number of the scooter to delete or cancel: ",
-        Validation.serial_number_validation,
-        current_user.username,
-        "serial_number"
-    )
-
-    scooter = get_scooter_by_serial_number(serial_number)
-    
-    if serial_number is not None:
-        if scooter:
-            confirmation = input(f"Are you sure you want to delete scooter {scooter.serial_number}? (yes/no): ").strip().lower()
-            if confirmation == 'yes':
-                delete_scooter(serial_number)
-                print(f"Scooter {scooter.serial_number} deleted successfully.")
-                log_instance.addlog(current_user.username, "Scooter deleted", serial_number, False)
-            else:
-                print("Deletion cancelled.")
-        else:
-            print("Scooter not found.")
-
-    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-
-def update_scooter_controller(current_user):
-    require_authorization(current_user, 'update_scooter')
-
-    general_methods.clear_console()
-    print("----------------------------------------------------------------------------")
-    print("|" + "Available Scooters".center(75) + "|")
-    print("----------------------------------------------------------------------------")
-
-    # Show scooters
-    scooters = list_scooters()
-    if not scooters:
-        print("No scooters available to update.")
-        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-        return
-
-    for s in scooters:
-        print(f"ID: {s.id}")
-        print(f"Brand: {s.brand}")
-        print(f"Model: {s.model}")
-        print(f"Serial Number: {s.serial_number}")
-        print(f"Top Speed: {s.top_speed} km/h")
-        print(f"Battery Capacity: {s.battery_capacity} mAh")
-        print(f"State of Charge: {s.soc}%")
-        print(f"SOC Range: {s.soc_range_min}% - {s.soc_range_max}%")
-        print(f"Location: Latitude {s.location_latitude}, Longitude {s.location_longitude}")
-        print(f"Out of Service: {'Yes' if s.out_of_service else 'No'}")
-        print(f"Mileage: {s.mileage} km")
-        print(f"Last Maintenance Date: {s.last_maintenance_date}")
-        print(f"In Service Date: {s.in_service_date}")
-        print("----------------------------------------------------------------------------")
-
-    try:
-        scooter_id = int(input("\nEnter the ID of the scooter to update: ").strip())
-    except ValueError:
-        print("Invalid ID. Please enter a valid number.")
-        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-        return
-    general_methods.clear_console()
-    # Search the scooter
-    target_scooter = next((s for s in scooters if s.id == scooter_id), None)
-    if not target_scooter:
-        print("Scooter not found.")
-        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-        return
 
     username = current_user.username
 
-    allowed_fields_per_role = {
-        'super_administrator': [str(i) for i in range(1, 15)],
-        'system_administrator': [str(i) for i in range(1, 15)],
-        'service_engineer': ['3', '4','5', '6', '7', '8', '9', '10', '11', '12'],
-    }
+    # Fetch scooters
+    scooters = list_scooters()
+    if not scooters:
+        print("No scooters available for deletion.")
+        general_methods.hidden_input("\nPress Enter to return...")
+        return
 
-    field_map = {
-        '1': ('brand', "Brand", Validation.brand_validation),
-        '2': ('model', "Model", Validation.model_validation),
-        '3': ('top_speed', "Top Speed (1–300)", Validation.top_speed_validation),
-        '4': ('battery_capacity', "Battery Capacity (200–3000)", Validation.battery_capacity_validation),
-        '5': ('soc', "State of Charge (0–100)", Validation.soc_single_value),
-        '6': ('soc_range_min', "SOC Range Min (0–100)", lambda v, u: True),
-        '7': ('soc_range_max', "SOC Range Max (0–100)", lambda v, u: True),
-        '8': ('location_latitude', "Latitude (format XX.XXXXX)", lambda v, u: True),
-        '9': ('location_longitude', "Longitude (format X.XXXXX)", lambda v, u: True),
-        '10': ('out_of_service', "Out of Service (yes/no)", lambda v, u: v.lower() in ['yes', 'no']),
-        '11': ('mileage', "Mileage", Validation.mileage_validation),
-        '12': ('last_maintenance_date', "Last Maintenance Date (YYYY-MM-DD)", Validation.last_maintenance_date_validation),
-        '13' : ('serial_number', "Serial Number (10–17 alphanumeric)", Validation.serial_number_validation),
-        '14': ('in_service_date', "In Service Date (YYYY-MM-DD)", Validation.last_maintenance_date_validation),
-    }
+    # Display scooters (show serial clearly)
+    print("\nAvailable Scooters:")
+    print("----------------------------------------------------------------------------")
+    for s in scooters:
+        print(f"Serial: {getattr(s, 'serial_number', '')} | Brand: {getattr(s, 'brand', '')} | "
+              f"Model: {getattr(s, 'model', '')} | "
+              f"Status: {'out of service' if getattr(s, 'out_of_service', False) else 'in service'}")
+    print("----------------------------------------------------------------------------")
 
-    # give the user a choice of fields to update
-    allowed = allowed_fields_per_role.get(current_user.role, [])
+    # --- INPUT LOOP FOR SERIAL ---
+    while True:
+        serial_input = input("\nEnter the SERIAL NUMBER of the scooter to delete (or 'cancel'): ").strip()
+        if serial_input.lower() == "cancel":
+            print("Deletion cancelled.")
+            return
+
+        # Find scooter locally first to avoid useless DB calls
+        scooter = next((x for x in scooters if getattr(x, 'serial_number', '') == serial_input), None)
+        if not scooter:
+            print("No scooter found with that serial number. Please try again.")
+            log_instance.log_invalid_input(username, "serial_number", "Serial not found for deletion")
+            continue
+        break
+
+    # --- CONFIRM ---
+    confirmation = input(
+        f"Are you sure you want to delete scooter '{getattr(scooter, 'serial_number', '')}' "
+        f"({getattr(scooter, 'brand', '')} {getattr(scooter, 'model', '')})? (yes/no): "
+    ).strip().lower()
+
+    if confirmation != "yes":
+        print("Deletion cancelled.")
+        return
+
+    # --- DELETE VIA MODEL (by serial number) ---
+    try:
+        success = delete_scooter(getattr(scooter, 'serial_number', None))
+    except Exception as e:
+        print("An error occurred while deleting scooter:", str(e))
+        log_instance.addlog(username, "Scooter deletion exception", str(e), True)
+        return
+
+    if success:
+        print(f"\nScooter '{getattr(scooter, 'serial_number', '')}' deleted successfully.")
+        log_instance.addlog(username, "Scooter deleted", getattr(scooter, 'serial_number', ''), False)
+    else:
+        print("\nFailed to delete scooter.")
+        log_instance.addlog(username, "Scooter delete failed", getattr(scooter, 'serial_number', ''), True)
+
+    general_methods.hidden_input("\nPress Enter to return...")
+
+
+def update_scooter_controller(current_user):
+    require_authorization(current_user, 'update_scooter')
+    general_methods.clear_console()
+
+    print("----------------------------------------------------------------------------")
+    print("|" + "Update Scooter".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
+    # List scooters (compact)
+    scooters = list_scooters()
+    if not scooters:
+        print("No scooters found.")
+        general_methods.hidden_input("\nPress Enter to return...")
+        return
+
+    for s in scooters:
+        # Adjust attribute names if your model differs
+        print(f"ID: {s.id} | {getattr(s, 'brand', '')} {getattr(s, 'model', '')} | SN: {getattr(s, 'serial_number', '')}")
+
+    # --- SELECT SCOOTER ID ---
+    while True:
+        target_id_str = Validation.get_valid_input(
+            prompt="\nEnter scooter ID to update (or 'cancel' to stop): ",
+            validation_fn=Validation.get_valid_id_input,
+            username=current_user.username,
+            field_name="scooter_id"
+        )
+        if target_id_str is None:
+            print("Update cancelled.")
+            return
+
+        scooter_id = int(target_id_str)
+        scooter = next((x for x in scooters if x.id == scooter_id), None)
+        if not scooter:
+            print("Invalid selection. Please try again.")
+            continue
+        break
+
+    # --- MENU ---
+    general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + "Update Scooter".center(75) + "|")
+    print("----------------------------------------------------------------------------")
+
     print("\nWhich field do you want to update?")
-    for key in allowed:
-        label = field_map[key][1]
-        print(f"[{key}] {label}")
+    print("[1] Brand")
+    print("[2] Model")
+    print("[3] Serial Number")
+    print("[4] Top Speed")
+    print("[5] Battery Capacity")
+    print("[6] State of Charge")
+    print("[7] SOC Range (MIN/MAX)")
+    print("[8] Location (Latitude/Longitude)")
+    print("[9] Out of Service (yes/no)")
+    print("[10] Mileage")
+    print("[11] Last Maintenance Date")
     print("[0] Cancel")
 
     choice = input("Choose a number: ").strip()
+    username = current_user.username
 
+    # Simple fields (handled via get_valid_input)
+    field_map = {
+        '1': ('brand', "Brand (or 'cancel'): ", Validation.brand_validation, str),
+        '2': ('model', "Model (or 'cancel'): ", Validation.model_validation, str),
+        '4': ('top_speed', "Top Speed km/h (or 'cancel'): ", Validation.top_speed_validation, int),
+        '5': ('battery_capacity', "Battery Capacity 0–100 (or 'cancel'): ", Validation.soc_single_value, int),
+        '6': ('soc', "State of Charge 0–100 (or 'cancel'): ", Validation.soc_single_value, int),
+        '10': ('mileage', "Mileage (or 'cancel'): ", Validation.mileage_validation, int),
+        '11': ('last_maintenance_date', "Last Maintenance Date YYYY-MM-DD (or 'cancel'): ", Validation.last_maintenance_date_validation, str),
+    }
+
+    update_data = {}
+
+    # --- CANCEL ---
     if choice == '0':
         print("Update cancelled.")
-        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
         return
 
-    if choice not in allowed:
-        print("You are not authorized to update this field.")
-        log_instance.addlog(username, "Unauthorized scooter field update", f"Field {choice}", True)
-        general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-        return
-
-    field_key, label, validator = field_map[choice]
-   
-    if choice == '13':
-        MAX_SERIAL_ATTEMPTS = 3
-        serial_attempts = 0
-        valid_serial = False
-        
-        while not valid_serial and serial_attempts < MAX_SERIAL_ATTEMPTS:
-            new_value = input(f"Enter new value for {label}: ").strip()
-            
-            # Validate serial number format
-            if not validator(new_value, username):
-                serial_attempts += 1
-                log_instance.log_invalid_input(username, "serial_number", "Invalid serial number format")
-                
-                if serial_attempts >= MAX_SERIAL_ATTEMPTS:
-                    print("Too many failed serial number attempts.")
-                    log_instance.addlog(username, "Scooter update", "Too many failed serial number attempts", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
-                continue
-            
-            # Check if serial number is already in use by another scooter
-            existing_scooter = get_scooter_by_serial_number(new_value)
-            if existing_scooter and existing_scooter.id != target_scooter.id:
-                serial_attempts += 1
-                print("Serial number already exists. Please try again.")
-                log_instance.log_invalid_input(username, "serial_number", "Attempt to use duplicate serial number")
-                
-                if serial_attempts >= MAX_SERIAL_ATTEMPTS:
-                    log_instance.addlog(username, "Scooter update", "Too many failed serial number attempts", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
-                continue
-            
-            valid_serial = True
-    else:
-        # For other fields, just get the input once
-        new_value = input(f"Enter new value for {label}: ").strip()
-
-        # Basic validation first
-        if not validator(new_value, username):
-            print(f"Invalid {label}. Update cancelled.")
-            log_instance.log_invalid_input(username, field_key, f"Update validation failed")
-            general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+    # --- SERIAL NUMBER (unique with UE-1) ---
+    if choice == '3':
+        new_serial = Validation.get_valid_input(
+            prompt="Serial Number (or 'cancel'): ",
+            validation_fn=lambda serial, user: unique_serial_number_validation(
+                serial, user, exclude_serial=getattr(scooter, 'serial_number', '')
+            ),
+            username=username,
+            field_name="serial number"
+        )
+        if new_serial is None:
+            print("Update cancelled.")
             return
+        update_data['serial_number'] = new_serial
 
-        # SOC-range specific validation (after basic validation)
-        if choice in ['6', '7']:
-            if not new_value.isdigit() or not (0 <= int(new_value) <= 100):
-                print("SOC range must be between 0 and 100.")
-                general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-                return
-            if choice == '6':  # Min
-                soc_max = int(target_scooter.soc_range_max)
-                if int(new_value) >= soc_max:
-                    print(f"SOC Range Min must be less than SOC Range Max ({soc_max}).")
-                    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-                    return
-            elif choice == '7':  # Max
-                soc_min = int(target_scooter.soc_range_min)
-                if int(new_value) <= soc_min:
-                    print(f"SOC Range Max must be greater than SOC Range Min ({soc_min}).")
-                    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-                    return
+    # --- SOC RANGE (SR-1, both values) ---
+    elif choice == '7':
+        new_min, new_max = Validation.get_valid_range_input(
+            prompt_min="Target SOC Range MIN 0–100 (or 'cancel'): ",
+            prompt_max="Target SOC Range MAX 0–100 (or 'cancel'): ",
+            validation_fn=Validation.soc_range_validation,
+            username=username,
+            field_name="target SOC range"
+        )
+        if new_min is None or new_max is None:
+            print("Update cancelled.")
+            return
+        update_data['soc_range_min'] = int(new_min)
+        update_data['soc_range_max'] = int(new_max)
 
-        # Location validation
-        if choice == '8':
-            if not Validation.location_validation(new_value, target_scooter.location_longitude, username):
-                general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-                return
-        elif choice == '9':
-            if not Validation.location_validation(target_scooter.location_latitude, new_value, username):
-                general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
-                return
+    # --- LOCATION (LOC-1 + LOC-R1) ---
+    elif choice == '8':
+        new_lat, new_lon = Validation.get_valid_coordinates(
+            prompt_lat="Latitude (51.85000–52.05000, or 'cancel'): ",
+            prompt_lon="Longitude (4.40000–4.55000, or 'cancel'): ",
+            validation_fn=Validation.location_validation,
+            username=username
+        )
+        if new_lat is None or new_lon is None:
+            print("Update cancelled.")
+            return
+        # LAT-1: store as entered (cast to float only if your model expects float)
+        update_data['location_latitude'] = float(new_lat)
+        update_data['location_longitude'] = float(new_lon)
 
-        # Convert
-        if field_key == 'out_of_service':
-            new_value = new_value.lower() == 'yes'
-        elif field_key in ['top_speed', 'battery_capacity', 'soc', 'soc_range_min', 'soc_range_max', 'mileage']:
-            new_value = int(new_value)
-        elif field_key in ['location_latitude', 'location_longitude']:
-            new_value = float(new_value)
+    # --- OUT OF SERVICE (yes/no -> boolean ST-A) ---
+    elif choice == '9':
+        yn = Validation.get_valid_input(
+            prompt="Out of Service? (yes/no, or 'cancel'): ",
+            validation_fn=Validation.yes_no_validation,
+            username=username,
+            field_name="out_of_service"
+        )
+        if yn is None:
+            print("Update cancelled.")
+            return
+        update_data['out_of_service'] = (yn.lower() == 'yes')
 
-    # Update the scooter
-    if update_scooter(scooter_id, {field_key: new_value}):
-        print("Scooter updated successfully.")
-        log_instance.addlog(username, f"Scooter {field_key} updated", f"ID: {scooter_id}", False)
+    # --- SIMPLE FIELDS (map-driven) ---
+    elif choice in field_map:
+        field_key, prompt, validator, caster = field_map[choice]
+        new_val = Validation.get_valid_input(
+            prompt=prompt,
+            validation_fn=validator,
+            username=username,
+            field_name=field_key
+        )
+        if new_val is None:
+            print("Update cancelled.")
+            return
+        update_data[field_key] = caster(new_val) if caster is not str else new_val
+
     else:
-        print("Update failed.")
-        log_instance.addlog(username, f"Scooter {field_key} update failed", f"ID: {scooter_id}", True)
+        print("Invalid choice.")
+        return
 
-    general_methods.hidden_input("\nPress Enter to return to the scooter menu...")
+    # --- APPLY UPDATE ---
+    try:
+        success = update_scooter(scooter_id, update_data)
+    except Exception as e:
+        print("An error occurred while updating scooter:", str(e))
+        log_instance.addlog(username, "Scooter update exception", str(e), True)
+        return
+
+    if success:
+        print("\nScooter updated successfully.")
+        log_instance.addlog(username, "Scooter updated", str(update_data), False)
+    else:
+        print("\nUpdate failed.")
+        log_instance.addlog(username, "Scooter update failed", str(update_data), True)
+
+    general_methods.hidden_input("\nPress Enter to return...")
 
 def search_scooter(current_user):
     require_authorization(current_user, 'search_scooter')
@@ -411,7 +502,9 @@ def search_scooter(current_user):
 
     if result:
         general_methods.clear_console()
-        print(f"\n--- {number_of_results} scooter(s) found ---")
+        print("----------------------------------------------------------------------------")
+        print("|" + "Found scooters".center(75) + "|")
+        print("----------------------------------------------------------------------------")
         for s in result:
             print(f"ID: {s.id}")
             print(f"Brand: {s.brand}")
