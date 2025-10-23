@@ -6,6 +6,40 @@ from helpers.general_methods import general_methods
 import sys
 import time
 
+# Unique validation functions for traveller fields
+def unique_email_validation(email, username, exclude_id=None):
+    """Validate email format and check for uniqueness."""
+    if not Validation.email_validation(email, username):
+        return False
+    existing = get_traveller_by_email(email)
+    if existing and (exclude_id is None or existing.id != exclude_id):
+        print("A traveller with this email already exists.")
+        log_instance.log_invalid_input(username, "email", "Duplicate traveller email")
+        return False
+    return True
+
+def unique_phone_validation(phone, username, exclude_id=None):
+    """Validate phone format and check for uniqueness."""
+    if not Validation.phone_validation(phone, username):
+        return False
+    existing = get_traveller_by_phone(phone)
+    if existing and (exclude_id is None or existing.id != exclude_id):
+        print("A traveller with this phone number already exists.")
+        log_instance.log_invalid_input(username, "phone_number", "Duplicate traveller phone")
+        return False
+    return True
+
+def unique_license_validation(license_number, username, exclude_id=None):
+    """Validate license format and check for uniqueness."""
+    if not Validation.license_validation(license_number, username):
+        return False
+    existing = get_traveller_by_license(license_number)
+    if existing and (exclude_id is None or existing.id != exclude_id):
+        print("A traveller with this license number already exists.")
+        log_instance.log_invalid_input(username, "license_number", "Duplicate traveller license")
+        return False
+    return True
+
 def traveller_menu(current_user):
     while True:
         general_methods.clear_console()
@@ -46,7 +80,6 @@ def get_valid_input(prompt, validation_fn, username, field_name):
         value = input(prompt).strip()
         if validation_fn(value, username):
             return value
-        attempts += 1
         log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
         print(f"Invalid {field_name}. Please try again.")
 
@@ -153,47 +186,32 @@ def add_traveller(current_user):
 
 
     # EMAIL with UNIQUE CHECK
-    def unique_email(email, username):
-        if not Validation.email_validation(email, username):
-            return False
-        if get_traveller_by_email(email):
-            print("Email already in use. Please choose another.")
-            log_instance.log_invalid_input(username, "email", "Duplicate traveller email")
-            return False
-        return True
-
-    email = Validation.get_valid_input("Email (or 'cancel' to stop): ",
-                                       unique_email, username, "email")
+    email = Validation.get_valid_input(
+        "Email (or 'cancel' to stop): ",
+        lambda email, un: unique_email_validation(email, username),
+        username, 
+        "email"
+    )
     if email is None:
         return
 
-    def unique_phone(phone, username):
-        if not Validation.phone_validation(phone, username):
-            return False
-        if get_traveller_by_phone(phone):
-            print("A traveller with this phone number already exists. Please use a different one.")
-            log_instance.log_invalid_input(username, "phone_number", "Duplicate traveller phone")
-            return False
-        return True
-
     # PHONE NUMBER
-    phone_number = Validation.get_valid_input("Phone Number (+31-6-xxxxxxxx, or 'cancel' to stop): ",
-                                              unique_phone, username, "phone number")
+    phone_number = Validation.get_valid_input(
+        "Phone Number (+31-6-xxxxxxxx, or 'cancel' to stop): ",
+        lambda phone, un: unique_phone_validation(phone, username),
+        username, 
+        "phone number"
+    )
     if phone_number is None:
         return
 
-    def unique_license(license_number, username):
-        if not Validation.license_validation(license_number, username):
-            return False
-        if get_traveller_by_license(license_number):
-            print("A traveller with this license number already exists. Please use a different one.")
-            log_instance.log_invalid_input(username, "license_number", "Duplicate traveller license")
-            return False
-        return True
-
     # LICENSE NUMBER
-    license_number = Validation.get_valid_input("License Number (XX1234567 or X1234567, or 'cancel' to stop): ",
-                                                unique_license, username, "license number")
+    license_number = Validation.get_valid_input(
+        "License Number (XX1234567 or X1234567, or 'cancel' to stop): ",
+        lambda license, un: unique_license_validation(license, username),
+        username, 
+        "license number"
+    )
     if license_number is None:
         return
 
@@ -352,20 +370,9 @@ def update_traveller_controller(current_user):
 
     # --- SPECIAL CASE: EMAIL (UNIQUE + UE-1 rule) ---
     elif choice == '9':
-        def unique_email_validation(email, _):
-            if not Validation.email_validation(email, username):
-                return False
-            if email.lower() == target.email.lower():  # UE-1
-                return True
-            if get_traveller_by_email(email):
-                print("A traveller with this email already exists.")
-                log_instance.log_invalid_input(username, "email", "Duplicate traveller email")
-                return False
-            return True
-
         new_email = Validation.get_valid_input(
             prompt="Enter new email (or 'cancel' to stop): ",
-            validation_fn=unique_email_validation,
+            validation_fn=lambda email, un: unique_email_validation(email, username, target.id),
             username=username,
             field_name="email"
         )
@@ -375,20 +382,9 @@ def update_traveller_controller(current_user):
         update_data["email"] = new_email.lower()
 
     elif choice == '10':
-        def unique_phone_update(phone, _):
-            if not Validation.phone_validation(phone, username):
-                return False
-            if phone == target.phone_number:  # UE-1 rule
-                return True
-            if get_traveller_by_phone(phone):
-                print("A traveller with this phone number already exists.")
-                log_instance.log_invalid_input(username, "phone_number", "Duplicate traveller phone")
-                return False
-            return True
-        
         new_phone = Validation.get_valid_input(
             prompt="Enter new phone number (or 'cancel' to stop): ",
-            validation_fn=unique_phone_update,
+            validation_fn=lambda phone, un: unique_phone_validation(phone, username, target.id),
             username=username,
             field_name="phone_number"
         )
@@ -398,19 +394,9 @@ def update_traveller_controller(current_user):
         update_data["phone_number"] = new_phone
         
     elif choice == '11':
-        def unique_license_update(license_number, _):
-            if not Validation.license_validation(license_number, username):
-                return False
-            if license_number == target.license_number:  # UE-1 rule
-                return True
-            if get_traveller_by_license(license_number):
-                print("A traveller with this license number already exists.")
-                log_instance.log_invalid_input(username, "license_number", "Duplicate traveller license")
-                return False
-            return True
         new_license = Validation.get_valid_input(
             prompt="Enter new license number (or 'cancel' to stop): ",
-            validation_fn=unique_license_update,
+            validation_fn=lambda license, un: unique_license_validation(license, username, target.id),
             username=username,
             field_name="license_number"
         )
