@@ -144,7 +144,7 @@ def create_new_user(current_user):
         else:
             print("Invalid role. Please try again.")
     
-    print("First and last names should only contain letters, hyphens, spaces or apostrophes.")    
+    print("First and last names should only contain letters, hyphens, or spaces.")    
     firstname = Validation.get_valid_input(
         prompt="Enter first name: ",
         validation_fn=Validation.name_validation,
