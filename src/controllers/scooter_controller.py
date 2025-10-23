@@ -84,9 +84,10 @@ def add_scooter(current_user):
             continue
         break
     else:
-        print("Too many failed serial number attempts.")
-        log_instance.log_invalid_input(username, "scooter adding", "Too many failed serial number attempts")
-        sys.exit()
+        print("Too many failed serial number attempts. Returning to menu.")
+        log_instance.addlog(username, "Scooter creation cancelled", "Too many failed serial number attempts", False)
+        time.sleep(1)
+        return
     top_speed = Validation.get_valid_input("Top Speed (1–300): ", Validation.top_speed_validation, username, "top speed")
     battery_capacity = Validation.get_valid_input("Battery Capacity (50–2000): ", Validation.battery_capacity_validation, username, "battery capacity")
     soc = Validation.get_valid_input("State of Charge (0–100): ", Validation.soc_single_value, username, "state of charge")
