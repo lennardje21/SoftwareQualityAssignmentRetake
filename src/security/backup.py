@@ -110,7 +110,6 @@ class BackupManager:
             general_methods.hidden_input("\nPress Enter to return to the user menu...")
             return False
 
-
     def generate_unique_restore_code():
         """Generate a unique restore code."""
 
@@ -120,7 +119,8 @@ class BackupManager:
         restore_code = ''.join(random.choice(characters) for _ in range(code_length))
 
         return restore_code
-    
+
+
     @staticmethod
     def link_backup_restore_code(current_user):
         """Super admin: link a restore code to a system admin and a specific backup (stored outside the DB)."""
@@ -160,8 +160,6 @@ class BackupManager:
 
         # Select admin
         admin_found = False
-        invalid_admin_attempts = 0
-        MAX_INVALID_ADMIN_ATTEMPTS = 3
 
         while not admin_found:
             admin_id = int(Validation.get_valid_input(
@@ -179,15 +177,8 @@ class BackupManager:
                     break
 
             if not admin_found:
-                invalid_admin_attempts += 1
                 print(f"No system administrator found with ID {admin_id}.")
                 log_instance.log_invalid_input(current_user.username, "admin selection", f"Invalid admin ID: {admin_id}")
-                if invalid_admin_attempts >= MAX_INVALID_ADMIN_ATTEMPTS:
-                    print("Too many failed attempts to select a valid administrator.")
-                    log_instance.addlog(current_user.username, "Backup restore ID input",
-                                        f"Multiple failed admin ID selection attempts ({invalid_admin_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
 
         # Show available backups
         if not os.path.exists(backup_dir):
@@ -205,8 +196,6 @@ class BackupManager:
 
         # Select backup
         backup_found = False
-        invalid_backup_attempts = 0
-        MAX_INVALID_BACKUP_ATTEMPTS = 3
 
         while not backup_found:
             backup_choice = input("\nEnter the number of the backup you wish to link: ").strip()
@@ -216,27 +205,13 @@ class BackupManager:
                     selected_backup = backups[backup_index]
                     backup_found = True
                 else:
-                    invalid_backup_attempts += 1
                     print(f"Invalid backup selection. Please choose a number between 1 and {len(backups)}.")
                     log_instance.log_invalid_input(current_user.username, "backup selection",
                                                 f"Invalid backup index: {backup_index + 1}")
-                    if invalid_backup_attempts >= MAX_INVALID_BACKUP_ATTEMPTS:
-                        print("Too many failed attempts to select a valid backup file.")
-                        log_instance.addlog(current_user.username, "Backup restore file selection",
-                                            f"Multiple failed backup selection attempts ({invalid_backup_attempts})", True)
-                        print("For security reasons, you have been logged out.")
-                        sys.exit(1)
             except ValueError:
-                invalid_backup_attempts += 1
                 print("Please enter a valid number.")
                 log_instance.log_invalid_input(current_user.username, "backup selection",
                                             f"Invalid backup selection input: {backup_choice}")
-                if invalid_backup_attempts >= MAX_INVALID_BACKUP_ATTEMPTS:
-                    print("Too many failed attempts to select a valid backup file.")
-                    log_instance.addlog(current_user.username, "Backup restore file selection",
-                                        f"Multiple failed backup selection attempts ({invalid_backup_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
 
         # Generate code and store OUTSIDE DB
         restore_code = BackupManager.generate_unique_restore_code()
@@ -299,7 +274,7 @@ class BackupManager:
                 break
 
             attempts += 1
-            print("Invalid restore code or code does not belong to your account.")
+            print("Invalid restore code.")
             log_instance.log_invalid_input(current_user.username, "system administrator restore backup",
                                         f"Invalid restore code: {code_input}")
             if attempts >= MAX_RESTORE_CODE_ATTEMPTS:
@@ -308,6 +283,7 @@ class BackupManager:
                                     f"Multiple failed restore code attempts ({attempts})", True)
                 print("For security reasons, you have been logged out.")
                 sys.exit(1)
+
 
         # Proceed with restoring the backup
         backup_path = os.path.join(base_dir, 'backups', backup_filename)
@@ -318,12 +294,10 @@ class BackupManager:
             return
 
         # Confirm
-        MAX_CONFIRM_ATTEMPTS = 3
-        confirm_attempts = 0
         print("\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
         print("You will need to log in again after the restore process is complete.")
 
-        while confirm_attempts < MAX_CONFIRM_ATTEMPTS:
+        while True:
             confirm = input(f"WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
             if confirm == 'y':
                 break
@@ -331,15 +305,8 @@ class BackupManager:
                 print("Backup restoration cancelled.")
                 return False
             else:
-                confirm_attempts += 1
                 print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
                 log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
-                if confirm_attempts >= MAX_CONFIRM_ATTEMPTS:
-                    print("Too many failed attempts to confirm. Operation cancelled.")
-                    log_instance.addlog(current_user.username, "Restore backup",
-                                        f"Multiple failed confirmation attempts ({confirm_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
 
         # Restore (table-safe) and consume the code
         if BackupManager.restore_database_from_backup(backup_path, current_user):
@@ -401,11 +368,9 @@ class BackupManager:
             print(f"{i}. Code: {c['code']} - Admin: {admin_name} - Backup: {c['backup_filename']} - Created: {c['created_at']}")
 
         # Select which to revoke
-        MAX_SELECTION_ATTEMPTS = 3
-        attempts = 0
         index = None
 
-        while attempts < MAX_SELECTION_ATTEMPTS:
+        while True:
             choice = input("\nEnter the number of the code to revoke (or 'c' to cancel): ").strip().lower()
             if choice == 'c':
                 print("Operation cancelled.")
@@ -417,27 +382,16 @@ class BackupManager:
                     index = idx
                     break
                 else:
-                    attempts += 1
                     print(f"Please enter a number between 1 and {len(codes)}.")
                     log_instance.log_invalid_input(current_user.username, "restore code selection",
                                                 f"Invalid code index: {idx + 1}")
             except ValueError:
-                attempts += 1
                 print("Please enter a valid number.")
                 log_instance.log_invalid_input(current_user.username, "restore code selection",
                                             f"Invalid input: {choice}")
 
-            if attempts >= MAX_SELECTION_ATTEMPTS:
-                print("Too many failed attempts to select a valid restore code.")
-                log_instance.addlog(current_user.username, "backup code revoking",
-                                    f"Multiple failed restore code selection attempts ({attempts})", True)
-                print("For security reasons, you have been logged out.")
-                sys.exit(1)
-
         # Confirm revocation
-        MAX_CONFIRM_ATTEMPTS = 3
-        confirm_attempts = 0
-        while confirm_attempts < MAX_CONFIRM_ATTEMPTS:
+        while True:
             confirm = input(f"Are you sure you want to revoke the restore code {codes[index]['code']}? (y/n): ").strip().lower()
             if confirm == 'y':
                 break
@@ -445,15 +399,8 @@ class BackupManager:
                 print("Operation cancelled.")
                 return
             else:
-                confirm_attempts += 1
                 print("Invalid input. Please enter 'y' to confirm or 'n' to cancel.")
                 log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
-                if confirm_attempts >= MAX_CONFIRM_ATTEMPTS:
-                    print("Too many failed attempts to confirm. Operation cancelled.")
-                    log_instance.addlog(current_user.username, "Revoke restore code",
-                                        f"Multiple failed confirmation attempts ({confirm_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
 
         # Revoke
         store.consume_code_by_index(index)
@@ -499,12 +446,10 @@ class BackupManager:
             print(f"{i}. {backup} (Created: {backup_time_str}, Size: {backup_size:.1f} KB)")
 
         # Ask user for choice
-        MAX_SELECTION_ATTEMPTS = 3
-        selection_attempts = 0
         backup_selection_valid = False
         selected_backup = None
-        
-        while not backup_selection_valid and selection_attempts < MAX_SELECTION_ATTEMPTS:
+
+        while not backup_selection_valid:
             choice = input("\nEnter the number of the backup you want to restore (or 'c' to cancel): ")
             
             if choice.lower() == 'c':
@@ -518,28 +463,13 @@ class BackupManager:
                     selected_backup = backups[choice_index]
                     backup_selection_valid = True
                 else:
-                    selection_attempts += 1
                     print(f"Please enter a number between 1 and {len(backups)}.")
                     log_instance.log_invalid_input(current_user.username, "backup selection", 
                                                 f"Invalid backup index: {choice_index + 1}")
-                    
-                    if selection_attempts >= MAX_SELECTION_ATTEMPTS:
-                        print("Too many failed attempts to select a valid backup.")
-                        log_instance.addlog(current_user.username, "Backup restoration", 
-                                        f"Multiple failed backup selection attempts ({selection_attempts})", True)
-                        print("For security reasons, you have been logged out.")
-                        sys.exit(1)
             except ValueError:
-                selection_attempts += 1
                 print("Please enter a valid number.")
                 log_instance.log_invalid_input(current_user.username, "backup selection", f"Invalid backup selection input: {choice}")
                 
-                if selection_attempts >= MAX_SELECTION_ATTEMPTS:
-                    print("Too many failed attempts to select a valid backup.")
-                    log_instance.addlog(current_user.username, "Backup restoration", 
-                                    f"Multiple failed backup selection attempts ({selection_attempts})", True)
-                    print("For security reasons, you have been logged out.")
-                    sys.exit(1)
         
         selected_backup_path = os.path.join(backup_dir, selected_backup)
 
