@@ -619,7 +619,7 @@ class BackupManager:
             # Rollback on error
             try:
                 conn_current.rollback()
-            except:
+            except Exception:
                 pass
             
             # Log error AFTER rollback (avoids deadlock)
