@@ -172,12 +172,12 @@ def delete_user_by_id(user_id):
     conn = open_connection()
     cursor = conn.cursor()
     
-    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    
-    conn.commit()
-    close_connection(conn)
-    
-    return cursor.rowcount > 0  # Return True if the deletion was successful
+    try:
+        cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.commit()
+        return cursor.rowcount > 0  # Return True if the deletion was successful
+    finally:
+        close_connection(conn)
 
 def update_user_by_id(user_id, fields):
     """Update user information by ID."""
