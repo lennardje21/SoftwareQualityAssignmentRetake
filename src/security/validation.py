@@ -60,6 +60,11 @@ class Validation:
 
     @staticmethod
     def is_valid_search_input(query: str, username) -> bool:
+        # Null byte check
+        if Validation.contains_null_byte(query):
+            print("Invalid search query: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "search", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[A-Za-z0-9]{3,20}", query):
             return True
         print(f"Invalid search query: {query}. Must be 3-20 alphanumeric characters.")
@@ -99,15 +104,25 @@ class Validation:
 
     @staticmethod
     def get_valid_id_input(id: str, username: str):
+        # Null byte check
+        if Validation.contains_null_byte(id):
+            print("Invalid ID: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "id", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[1-9]\d{0,7}", id):  # 1 t/m 99999999 (max 8 numbers, no leading zero)
             return True
 
-        print(f"Invalid ID: {id}. Must be a positive number ≤ 99999999 without leading zeros.")
+        print(f"Invalid ID: {id}. Must be a positive number <= 99999999 without leading zeros.")
         log_instance.log_invalid_input(username, "id", f"Invalid ID input: {id}")
         return False
 
     @staticmethod
     def name_validation(name, username):
+        # Null byte check
+        if Validation.contains_null_byte(name):
+            print("Invalid name: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "name", "Null byte detected", suspicious=True)
+            return False
         # Must start and end with a letter, can contain letters, spaces, hyphens, apostrophes in between
         # No consecutive special characters, 2-30 characters total
         if len(name) < 2 or len(name) > 30:
@@ -124,6 +139,11 @@ class Validation:
 
     @staticmethod
     def username_validation(username):
+        # Null byte check
+        if Validation.contains_null_byte(username):
+            print("Invalid username: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "username", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{7,9}$", username):
             return True
         print(f"Invalid username: {username}. Must be 8-10 characters, start with a letter or underscore, and may contain letters, numbers, underscores, apostrophes, and periods.")
@@ -132,6 +152,11 @@ class Validation:
 
     @staticmethod
     def password_validation(password, username):
+        # Null byte check
+        if Validation.contains_null_byte(password):
+            print("Invalid password: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "password", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~!@#$%&_\-+=`|\\(){}\[\]:;'<>,.?/])[A-Za-z\d~!@#$%&_\-+=`|\\(){}\[\]:;'<>,.?/]{12,30}$", password):
             return True
         print("Invalid password. Password does not meet complexity requirements.")
@@ -140,6 +165,11 @@ class Validation:
 
     @staticmethod
     def birthday_validation(date: str, username: str) -> bool:
+        # Null byte check
+        if Validation.contains_null_byte(date):
+            print("Invalid birthday: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "date_of_birth", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
             try:
                 date_of_birth = datetime.strptime(date, "%Y-%m-%d")
@@ -156,6 +186,11 @@ class Validation:
 
     @staticmethod
     def gender_validation(gender, username):
+        # Null byte check
+        if Validation.contains_null_byte(gender):
+            print("Invalid gender: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "gender", "Null byte detected", suspicious=True)
+            return False
         if gender.lower() in {'male', 'female'}:
             return True
         print(f"Invalid gender: {gender}. Must be 'male' or 'female'.")
@@ -164,6 +199,11 @@ class Validation:
 
     @staticmethod
     def street_validation(street, username):
+        # Null byte check
+        if Validation.contains_null_byte(street):
+            print("Invalid street: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "street", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[a-zA-Z][a-zA-Z0-9\s\-\.']{1,49}", street):
             return True
         print(f"Invalid street: {street}. Must be non-empty and valid format.")
@@ -172,6 +212,11 @@ class Validation:
 
     @staticmethod
     def housenumber_validation(housenumber, username):
+        # Null byte check
+        if Validation.contains_null_byte(housenumber):
+            print("Invalid house number: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "house", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"^[1-9]\d*(?:[ -]?(?:[a-zA-Z]+|[1-9]\d*))?$", housenumber):
             return True
         print(f"Invalid house number: {housenumber}. Must be a valid numeric format.")
@@ -180,6 +225,11 @@ class Validation:
 
     @staticmethod
     def zipcode_validation(zipcode, username):
+        # Null byte check
+        if Validation.contains_null_byte(zipcode):
+            print("Invalid zipcode: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "zipcode", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"^\d{4}[A-Z]{2}$", zipcode):
             return True
         print(f"Invalid zipcode: {zipcode}. Format is incorrect.")
@@ -188,6 +238,11 @@ class Validation:
 
     @staticmethod
     def phone_validation(phone, username):
+        # Null byte check
+        if Validation.contains_null_byte(phone):
+            print("Invalid phone number: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "phone", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"\d{8}", phone):
             return True
         print(f"Invalid phone number: {phone}. Must be 8 digits.")
@@ -196,6 +251,11 @@ class Validation:
 
     @staticmethod
     def email_validation(email, username):
+        # Null byte check
+        if Validation.contains_null_byte(email):
+            print("Invalid email: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "email", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$", email):
             return True
         print(f"Invalid email: {email}. Format is invalid.")
@@ -210,6 +270,11 @@ class Validation:
 
     @staticmethod
     def city_validation(city, username):
+        # Null byte check
+        if Validation.contains_null_byte(city):
+            print("Invalid city: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "city", "Null byte detected", suspicious=True)
+            return False
         valid_cities = {'Amsterdam', 'Rotterdam', 'Utrecht', 'Groningen', 'Maastricht', 'Den Haag', 'Eindhoven', 'Tilburg', 'Breda', 'Arnhem'}
         if city in valid_cities:
             return True
@@ -252,6 +317,11 @@ class Validation:
 
     @staticmethod
     def license_validation(license_number, username):
+        # Null byte check
+        if Validation.contains_null_byte(license_number):
+            print("Invalid license number: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "license", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[A-Z]{1,2}\d{7}", license_number):
             return True
         print(f"Invalid license number: {license_number}. Format: X1234567 or XX1234567.")
@@ -260,6 +330,11 @@ class Validation:
 
     @staticmethod
     def brand_validation(brand, username):
+        # Null byte check
+        if Validation.contains_null_byte(brand):
+            print("Invalid brand: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "brand", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\- ]{1,29}", brand):
             return True
         print(f"Invalid brand: {brand}. Must be non-empty and valid format.")
@@ -268,6 +343,11 @@ class Validation:
 
     @staticmethod
     def model_validation(model, username):
+        # Null byte check
+        if Validation.contains_null_byte(model):
+            print("Invalid model: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "model", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-\s]{1,29}", model):
             return True
         print(f"Invalid model: {model}. Must be non-empty and valid format.")
@@ -276,6 +356,11 @@ class Validation:
 
     @staticmethod
     def serial_number_validation(serial_number, username):
+        # Null byte check
+        if Validation.contains_null_byte(serial_number):
+            print("Invalid serial number: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "serial number", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[A-Za-z0-9]{10,17}$", serial_number):
             return True
         print(f"Invalid serial number: {serial_number}. Must be 10-17 alphanumeric characters.")
@@ -284,6 +369,11 @@ class Validation:
 
     @staticmethod
     def top_speed_validation(top_speed, username):
+        # Null byte check
+        if Validation.contains_null_byte(top_speed):
+            print("Invalid top speed: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "top speed", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[1-9][0-9]{0,2}", top_speed):
             value = int(top_speed)
             if 1 <= value <= 300:
@@ -294,6 +384,11 @@ class Validation:
 
     @staticmethod
     def battery_capacity_validation(battery_capacity, username):
+        # Null byte check
+        if Validation.contains_null_byte(battery_capacity):
+            print("Invalid battery capacity: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "battery capacity", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[1-9][0-9]{1,3}", battery_capacity):
             value = int(battery_capacity)
             if 50 <= value <= 2000:
@@ -304,6 +399,11 @@ class Validation:
 
     @staticmethod
     def soc_single_value(value, username):
+        # Null byte check
+        if Validation.contains_null_byte(value):
+            print("Invalid SOC value: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "SOC", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[0-9]{1,3}", value):
             val = int(value)
             if 0 <= val <= 100:
@@ -314,6 +414,11 @@ class Validation:
 
     @staticmethod
     def soc_range_validation(min, max, username):
+        # Null byte check
+        if Validation.contains_null_byte(min) or Validation.contains_null_byte(max):
+            print("Invalid SOC range: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "SOC range", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[0-9]{1,3}", min) and re.fullmatch(r"[0-9]{1,3}", max):
             min_val = int(min)
             max_val = int(max)
@@ -325,6 +430,11 @@ class Validation:
 
     @staticmethod
     def location_validation(latitude, longitude, username):
+        # Null byte check
+        if Validation.contains_null_byte(latitude) or Validation.contains_null_byte(longitude):
+            print("Invalid coordinates: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "location", "Null byte detected", suspicious=True)
+            return False
         # Enforce exactly 5 decimal places as per Rotterdam coordinate spec
         if re.fullmatch(r"\d{2}\.\d{5}", latitude) and re.fullmatch(r"\d\.\d{5}", longitude):
             try:
@@ -344,6 +454,11 @@ class Validation:
 
     @staticmethod
     def mileage_validation(mileage, username):
+        # Null byte check
+        if Validation.contains_null_byte(mileage):
+            print("Invalid mileage: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "mileage", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"[1-9]\d*|0", mileage):
             return True
         print(f"Invalid mileage: {mileage}. Must be a non-negative integer without leading zeros.")
@@ -352,6 +467,11 @@ class Validation:
 
     @staticmethod
     def last_maintenance_date_validation(last_maintenance_date, username):
+        # Null byte check
+        if Validation.contains_null_byte(last_maintenance_date):
+            print("Invalid maintenance date: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "last maintenance date", "Null byte detected", suspicious=True)
+            return False
         if re.fullmatch(r"^\d{4}-\d{2}-\d{2}$", last_maintenance_date):
             return True
         print(f"Invalid maintenance date: {last_maintenance_date}. Use format YYYY-MM-DD.")
@@ -360,6 +480,11 @@ class Validation:
 
     @staticmethod
     def yes_no_validation(choice, username):
+        # Null byte check
+        if Validation.contains_null_byte(choice):
+            print("Invalid yes/no choice: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "yes/no choice", "Null byte detected", suspicious=True)
+            return False
         if choice.lower() in {'yes', 'no'}:
             return True
         print(f"Invalid yes/no choice: {choice}. Must be 'yes' or 'no'.")
