@@ -104,13 +104,12 @@ def create_new_user(current_user):
     while True:
         username = Validation.get_valid_input(
             prompt="Enter username (or 'cancel' to stop): ",
-            validation_fn=lambda val, un: Validation.username_validation(val.lower()),
+            validation_fn=lambda val: Validation.username_validation(val.lower()),
             username=current_user.username,
             field_name="username"
         )
         if username is None:
             return
-        username = username.lower()
         if get_user_by_username(username):
             print("Username already exists. Please try again.")
             log_instance.log_invalid_input(current_user.username, "username", "Attempt to create duplicate username", False)
