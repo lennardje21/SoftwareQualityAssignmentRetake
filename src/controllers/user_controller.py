@@ -1,4 +1,3 @@
-import sys
 import time
 from security.validation import Validation
 from models.user import get_user_by_username, create_user, update_password, list_users, User, delete_user_by_id, update_user_by_id, update_password_by_id, clear_temporary_passwords, get_user_password_by_username
@@ -341,15 +340,17 @@ def update_user_account(current_user):
             print("Invalid selection. Please try again.")
             continue
         break
-    general_methods.clear_console()
-
     # --- FIELD SELECTION LOOP ---
     while True:
+        general_methods.clear_console()
+        print("----------------------------------------------------------------------------")
+        print("|" + f"Update User: {target_user.firstname} {target_user.lastname}".center(75) + "|")
+        print("----------------------------------------------------------------------------")
         print("\nWhich field do you want to update?")
-        print("[1] Username")
-        print("[2] First Name")
-        print("[3] Last Name")
-        print("[0] Cancel")
+        print(f"[1] Username: {target_user.username}")
+        print(f"[2] First Name: {target_user.firstname}")
+        print(f"[3] Last Name: {target_user.lastname}")
+        print(f"[0] Cancel")
 
         choice = input("Choose an option: ").strip()
 

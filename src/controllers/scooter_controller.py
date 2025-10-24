@@ -1,10 +1,8 @@
-import sys
 import time
 from models.scooter import create_scooter, list_scooters, get_scooter_by_serial_number, delete_scooter, update_scooter, search_scooters_partial
 from security.validation import Validation
 from logs.log import log_instance
 from controllers.rolecheck import is_authorized, require_authorization
-from security.encryption import load_symmetric_key
 from helpers.general_methods import general_methods
 
 # Unique validation function for scooter serial number
@@ -356,17 +354,17 @@ def update_scooter_controller(current_user):
     print("----------------------------------------------------------------------------")
 
     print("\nWhich field do you want to update?")
-    print("[1] Brand")
-    print("[2] Model")
-    print("[3] Serial Number")
-    print("[4] Top Speed")
-    print("[5] Battery Capacity")
-    print("[6] State of Charge")
-    print("[7] SOC Range (MIN/MAX)")
-    print("[8] Location (Latitude/Longitude)")
-    print("[9] Out of Service (yes/no)")
-    print("[10] Mileage")
-    print("[11] Last Maintenance Date")
+    print(f"[1] Brand: {scooter.brand}")
+    print(f"[2] Model: {scooter.model}")
+    print(f"[3] Serial Number: {scooter.serial_number}")
+    print(f"[4] Top Speed: {scooter.top_speed} km/h")
+    print(f"[5] Battery Capacity: {scooter.battery_capacity} mAh")
+    print(f"[6] State of Charge: {scooter.soc}%")
+    print(f"[7] SOC Range (MIN/MAX): {scooter.soc_range_min} - {scooter.soc_range_max}%")
+    print(f"[8] Location: Latitude {scooter.location_latitude}, Longitude {scooter.location_longitude}")
+    print(f"[9] Out of Service (yes/no): {'Yes' if scooter.out_of_service else 'No'}")
+    print(f"[10] Mileage: {scooter.mileage}")
+    print(f"[11] Last Maintenance Date: {scooter.last_maintenance_date}")
     print("[0] Cancel")
 
     choice = input("Choose a number: ").strip()
