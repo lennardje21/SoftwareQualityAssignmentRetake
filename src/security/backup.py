@@ -640,21 +640,21 @@ class BackupManager:
             if cur_current:
                 try:
                     cur_current.close()
-                except:
+                except Exception:
                     pass
             if cur_backup:
                 try:
                     cur_backup.close()
-                except:
+                except Exception:
                     pass
             
             try:
                 conn_backup.close()
-            except:
+            except Exception:
                 pass
             try:
                 conn_current.close()
-            except:
+            except Exception:
                 pass
 
         # STEP 6: Cleanup
