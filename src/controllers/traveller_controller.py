@@ -157,25 +157,10 @@ def add_traveller(current_user):
         return
 
     # CITY
-    valid_cities = ['Amsterdam', 'Rotterdam', 'Utrecht', 'Groningen', 'Maastricht',
-                    'Den Haag', 'Eindhoven', 'Tilburg', 'Breda', 'Arnhem']
-
-    print("\nSelect a city (or type 'cancel' to stop):")
-    for idx, c in enumerate(valid_cities, start=1):
-        print(f"{idx}. {c}")
-
-    while True:
-        city_choice = input("Enter number: ").strip()
-
-        if city_choice.lower() == "cancel":
-            print("Traveller creation cancelled.")
-            return
-
-        if city_choice.isdigit() and 1 <= int(city_choice) <= len(valid_cities):
-            city = valid_cities[int(city_choice) - 1]
-            break
-        print("Invalid selection. Please enter a valid number or 'cancel'.")
-
+    city = Validation.get_city_by_selection(username)
+    if city is None:
+        print("Traveller creation cancelled.")
+        return
 
     # EMAIL with UNIQUE CHECK
     email = Validation.get_valid_input(
@@ -297,18 +282,21 @@ def update_traveller_controller(current_user):
 
     # --- FIELD SELECTION MENU ---
     general_methods.clear_console()
+    print("----------------------------------------------------------------------------")
+    print("|" + f"Update Traveller: {target.first_name} {target.last_name}".center(75) + "|")
+    print("----------------------------------------------------------------------------")
     print("\nWhich field do you want to update?")
-    print("[1] First name")
-    print("[2] Last name")
-    print("[3] Date of birth")
-    print("[4] Gender")
-    print("[5] Street")
-    print("[6] House Number")
-    print("[7] Zip Code")
-    print("[8] City")
-    print("[9] Email")
-    print("[10] Phone Number")
-    print("[11] License Number")
+    print(f"[1] First name: {target.first_name}")
+    print(f"[2] Last name: {target.last_name}")
+    print(f"[3] Date of birth: {target.date_of_birth}")
+    print(f"[4] Gender: {target.gender}")
+    print(f"[5] Street: {target.streetname}")
+    print(f"[6] House Number: {target.house_number}")
+    print(f"[7] Zip Code: {target.zip_code}")
+    print(f"[8] City: {target.city}")
+    print(f"[9] Email: {target.email}")
+    print(f"[10] Phone Number: +31-6-{target.phone_number}")
+    print(f"[11] License Number: {target.license_number}")
     print("[0] Cancel")
 
     choice = input("Choose a number: ").strip()
@@ -343,22 +331,11 @@ def update_traveller_controller(current_user):
 
     # --- SPECIAL CASE: CITY (NUMBER SELECTION) ---
     if choice == '8':
-        valid_cities = ['Amsterdam', 'Rotterdam', 'Utrecht', 'Groningen', 'Maastricht',
-                        'Den Haag', 'Eindhoven', 'Tilburg', 'Breda', 'Arnhem']
-
-        print("\nSelect a city (or 'cancel'):")
-        for idx, c in enumerate(valid_cities, start=1):
-            print(f"{idx}. {c}")
-
-        while True:
-            city_choice = input("Enter number: ").strip()
-            if city_choice.lower() == "cancel":
-                print("Update cancelled.")
-                return
-            if city_choice.isdigit() and 1 <= int(city_choice) <= len(valid_cities):
-                update_data["city"] = valid_cities[int(city_choice) - 1]
-                break
-            print("Invalid selection. Please try again.")
+        selected_city = Validation.get_city_by_selection(username)
+        if selected_city is None:
+            print("Update cancelled.")
+            return
+        update_data["city"] = selected_city
 
     # --- SPECIAL CASE: EMAIL (UNIQUE + UE-1 rule) ---
     elif choice == '9':

@@ -28,7 +28,15 @@ def login() -> User | None:
         print("|" + "Welcome to the Urban Mobility System".center(75) + "|")
         print("----------------------------------------------------------------------------")
         username_input = input("Username: ").strip().lower()
-        password_input = input("Password: ").strip() #Nog geen invisible input NOTE: change later
+        password_input = general_methods.input_password("Password: ").strip()
+
+        # Check for null bytes (critical security check) via centralized validator
+        if Validation.contains_null_byte(username_input) or Validation.contains_null_byte(password_input):
+            general_methods.clear_console()
+            print("Login failed.")
+            log_instance.log_invalid_input(username_input, "login", "Null byte detected in credentials", suspicious=True)
+            time.sleep(2)
+            continue
         
         general_methods.clear_console()
         
