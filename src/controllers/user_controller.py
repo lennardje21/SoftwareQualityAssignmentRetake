@@ -102,6 +102,7 @@ def create_new_user(current_user):
     
     print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
+        # Normalize username to lowercase BEFORE validation (case-insensitive per spec)
         username = input("Enter username (or 'cancel' to stop): ").strip().lower()
         if username == "cancel":
             return
@@ -122,16 +123,18 @@ def create_new_user(current_user):
     if password is None:
         return
     allowed_roles = get_permitted_roles(current_user.role)
-    # Build a mapping from both names and numbers -> role names
+    # Build a whitelist mapping from both names (exact case and lowercase) and numbers -> role names
     role_lookup = {str(v): k for k, v in allowed_roles.items()}
-    role_lookup.update({k.lower(): k for k in allowed_roles})
+    role_lookup.update({k.lower(): k for k in allowed_roles})  # Add lowercase variants to whitelist
     
     role_options = [f"{num}: {name}" for name, num in allowed_roles.items()]
     
     while True:
+        # Accept input with .strip(), then check against whitelist (includes lowercase)
         role = input(f"Enter role ({', '.join(role_options)}) (or 'cancel' to stop): ").strip().lower()
         if role == "cancel":
             return
+        # Check against whitelist (includes lowercase variants)
         if role in role_lookup:
             chosen_role = role_lookup[role]
             print(f"Selected role: {chosen_role}")
@@ -160,7 +163,7 @@ def create_new_user(current_user):
         return
     
     try:
-        create_user(username.lower(), firstname, lastname, password, chosen_role)
+        create_user(username, firstname, lastname, password, chosen_role)  # Store exactly what was validated
         log_instance.addlog(current_user.username, f"User creation", f"Account with username {username} created", False)
         print(f"{chosen_role} {username} created successfully.")
     except Exception as e:
@@ -264,8 +267,8 @@ def delete_user_account(current_user):
 
     # --- CONFIRMATION STEP ---
     while True:
-        confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no/cancel): ").strip().lower()
-        if confirmation in {"no", "cancel"}:
+        confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no/cancel): ")
+        if confirmation in {"no", "cancel"}:  # Whitelist check
             print("Deletion cancelled.")
             return
         if confirmation == "yes":
@@ -359,6 +362,7 @@ def update_user_account(current_user):
             # Username update behavior same as CREATE
             print("Username requirements: 8-10 characters, letters and numbers only.")
             while True:
+                # Normalize username to lowercase BEFORE validation (case-insensitive per spec)
                 new_username = input("Enter new username (or 'cancel' to stop): ").strip().lower()
 
                 if new_username == "cancel":
@@ -388,7 +392,7 @@ def update_user_account(current_user):
             if new_first is None:
                 print("Update cancelled.")
                 return
-            update_data = {"firstname": new_first.title()}
+            update_data = {"firstname": new_first}  # Store exactly what was validated
             break
 
         elif choice == '3':
@@ -401,7 +405,7 @@ def update_user_account(current_user):
             if new_last is None:
                 print("Update cancelled.")
                 return
-            update_data = {"lastname": new_last.title()}
+            update_data = {"lastname": new_last}  # Store exactly what was validated
             break
 
         elif choice == '0':
