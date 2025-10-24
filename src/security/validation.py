@@ -43,7 +43,7 @@ class Validation:
                 Validation._get_log_instance().log_invalid_input(username, field_name, "Null byte detected in min value", suspicious=True)
                 continue
             
-            if min_val.lower() == "cancel":
+            if min_val.lower() == "cancel":  # .lower() only for command, not data
                 return None, None
 
             max_val = input(prompt_max).strip()
@@ -87,7 +87,7 @@ class Validation:
                 Validation._get_log_instance().log_invalid_input(username, "latitude", "Null byte detected", suspicious=True)
                 continue
             
-            if lat.lower() == "cancel":
+            if lat.lower() == "cancel":  # .lower() only for command, not data
                 return None, None
 
             lon = input(prompt_lon).strip()
@@ -196,6 +196,7 @@ class Validation:
             print("Invalid gender: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "gender", "Null byte detected", suspicious=True)
             return False
+        # Whitelist: accept both cases, normalize to lowercase for comparison
         if gender.lower() in {'male', 'female'}:
             return True
         print(f"Invalid gender: {gender}. Must be 'male' or 'female'.")
@@ -235,7 +236,8 @@ class Validation:
             print("Invalid zipcode: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "zipcode", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"^\d{4}[A-Z]{2}$", zipcode):
+        # Accept both upper and lowercase letters
+        if re.fullmatch(r"^\d{4}[A-Za-z]{2}$", zipcode):
             return True
         print(f"Invalid zipcode: {zipcode}. Format is incorrect.")
         Validation._get_log_instance().log_invalid_input(username, "zipcode", "Invalid format")
@@ -308,7 +310,7 @@ class Validation:
                 Validation._get_log_instance().log_invalid_input(username, "city selection", "Null byte detected", suspicious=True)
                 continue
             
-            if city_choice.lower() == "cancel":
+            if city_choice.lower() == "cancel":  # .lower() only for command, not data
                 return None
             
             if city_choice.isdigit() and 1 <= int(city_choice) <= len(valid_cities):
@@ -327,9 +329,10 @@ class Validation:
             print("Invalid license number: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "license", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[A-Z]{1,2}\d{7}", license_number):
+        # Accept both upper and lowercase letters
+        if re.fullmatch(r"[A-Za-z]{1,2}\d{7}", license_number):
             return True
-        print(f"Invalid license number: {license_number}. Format: X1234567 or XX1234567.")
+        print(f"Invalid license number: {license_number}. Format: 1-2 letters followed by 7 digits (e.g., X1234567 or AB1234567).")
         Validation._get_log_instance().log_invalid_input(username, "license", "Invalid format")
         return False
 
@@ -490,6 +493,7 @@ class Validation:
             print("Invalid yes/no choice: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "yes/no choice", "Null byte detected", suspicious=True)
             return False
+        # Whitelist: accept both cases, normalize to lowercase for comparison
         if choice.lower() in {'yes', 'no'}:
             return True
         print(f"Invalid yes/no choice: {choice}. Must be 'yes' or 'no'.")

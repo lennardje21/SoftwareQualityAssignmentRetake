@@ -27,6 +27,7 @@ def login() -> User | None:
         print("----------------------------------------------------------------------------")
         print("|" + "Welcome to the Urban Mobility System".center(75) + "|")
         print("----------------------------------------------------------------------------")
+        # Normalize username to lowercase BEFORE validation (case-insensitive per spec)
         username_input = input("Username: ").strip().lower()
         password_input = general_methods.input_password("Password: ").strip()
 
@@ -125,15 +126,18 @@ def _authenticate_database_user(username: str, password: str, key: bytes) -> Use
 
 
 def _find_user_by_username(conn: sqlite3.Connection, username: str, key: bytes) -> int | None:
-    """Find user ID by decrypting and matching username."""
+    """Find user ID by decrypting and matching username (case-insensitive)."""
     cursor = conn.cursor()
     cursor.execute("SELECT id, username FROM users")
     all_users = cursor.fetchall()
     
+    # Normalize username for comparison AFTER validation passed
+    username_normalized = username.lower()
+    
     for user_id, encrypted_username in all_users:
         try:
             decrypted_username = decrypt_message(encrypted_username, key).lower()
-            if decrypted_username == username:
+            if decrypted_username == username_normalized:
                 return user_id
         except Exception:
             continue

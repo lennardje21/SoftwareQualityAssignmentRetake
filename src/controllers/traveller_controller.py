@@ -192,10 +192,10 @@ def add_traveller(current_user):
     if license_number is None:
         return
 
-    # DATABASE SAVE
-    success = create_traveller(first_name.title(), last_name.title(), date_of_birth, gender.lower(),
-                               street.title(), house_number, zip_code.upper(), city,
-                               email.lower(), phone_number, license_number.upper())
+    # DATABASE SAVE - Store exactly what was validated, no massaging
+    success = create_traveller(first_name, last_name, date_of_birth, gender,
+                               street, house_number, zip_code, city,
+                               email, phone_number, license_number)
 
     if success:
         print(f"\nTraveller '{first_name} {last_name}' created successfully.")
@@ -424,6 +424,7 @@ def delete_traveller_controller(current_user):
         )
         if target_id_str is None:
             print("Deletion cancelled.")
+            time.sleep(1)
             return
 
         target_id = int(target_id_str)
@@ -434,9 +435,10 @@ def delete_traveller_controller(current_user):
         break
 
     # --- CONFIRM DELETION ---
-    confirm = input("Are you sure you want to delete this traveller? (yes/no): ").strip().lower()
-    if confirm != "yes":
+    confirm = input("Are you sure you want to delete this traveller? (yes/no): ")
+    if confirm != "yes":  # Whitelist: only exact "yes" proceeds
         print("Deletion cancelled.")
+        time.sleep(1)
         return
 
     # --- DELETE ---
