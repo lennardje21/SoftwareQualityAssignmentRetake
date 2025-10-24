@@ -329,10 +329,10 @@ class Validation:
             print("Invalid license number: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "license", "Null byte detected", suspicious=True)
             return False
-        # Accept both upper and lowercase letters
-        if re.fullmatch(r"[A-Za-z]{1,2}\d{7}", license_number):
+        # Accept: either 2 letters + 7 digits, or 1 letter + 8 digits (case-insensitive)
+        if re.fullmatch(r"(?:[A-Za-z]{2}\d{7}|[A-Za-z]\d{8})", license_number):
             return True
-        print(f"Invalid license number: {license_number}. Format: 1-2 letters followed by 7 digits (e.g., X1234567 or AB1234567).")
+        print(f"Invalid license number: {license_number}. Format: AB1234567 (2 letters + 7 digits) or A12345678 (1 letter + 8 digits).")
         Validation._get_log_instance().log_invalid_input(username, "license", "Invalid format")
         return False
 

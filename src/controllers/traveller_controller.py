@@ -184,7 +184,7 @@ def add_traveller(current_user):
 
     # LICENSE NUMBER
     license_number = Validation.get_valid_input(
-        "License Number (XX1234567 or X1234567, or 'cancel' to stop): ",
+        "License Number (XX1234567 or X12345678, or 'cancel' to stop): ",
         lambda license, un: unique_license_validation(license, username),
         username, 
         "license number"
