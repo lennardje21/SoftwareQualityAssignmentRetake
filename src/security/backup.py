@@ -209,20 +209,24 @@ class BackupManager:
         backup_found = False
 
         while not backup_found:
-            backup_choice = input("\nEnter the number of the backup you wish to link: ").strip()
-            try:
-                backup_index = int(backup_choice) - 1
-                if backup_index in range(len(backups)):
-                    selected_backup = backups[backup_index]
-                    backup_found = True
-                else:
-                    print(f"Invalid backup selection. Please choose a number between 1 and {len(backups)}.")
-                    log_instance.log_invalid_input(current_user.username, "backup selection",
-                                                f"Invalid backup index: {backup_index + 1}")
-            except ValueError:
-                print("Please enter a valid number.")
+            backup_choice = Validation.get_valid_input(
+                "\nEnter the number of the backup you wish to link (or 'cancel' to stop): ",
+                Validation.get_valid_id_input,
+                current_user.username,
+                "backup selection"
+            )
+            if backup_choice is None:
+                print("Operation cancelled.")
+                return
+
+            backup_index = int(backup_choice) - 1
+            if 0 <= backup_index < len(backups):
+                selected_backup = backups[backup_index]
+                backup_found = True
+            else:
+                print(f"Invalid backup selection. Please choose a number between 1 and {len(backups)}.")
                 log_instance.log_invalid_input(current_user.username, "backup selection",
-                                            f"Invalid backup selection input: {backup_choice}")
+                                            f"Invalid backup index: {backup_index + 1}")
 
         # Generate code and store OUTSIDE DB
         restore_code = BackupManager.generate_unique_restore_code()
@@ -257,7 +261,7 @@ class BackupManager:
             print("No restore code linked to your account. Please contact a super administrator.")
             general_methods.hidden_input("\nPress Enter to return to the backup menu...")
             return
-
+        
         MAX_RESTORE_CODE_ATTEMPTS = 3
         attempts = 0
         store = RestoreCodeStore()
@@ -271,8 +275,13 @@ class BackupManager:
         print("----------------------------------------------------------------------------")
 
         while attempts < MAX_RESTORE_CODE_ATTEMPTS:
-            code_input = input("\nEnter your restore code (or 'c' to cancel): ").strip()
-            if code_input.lower() == 'c':
+            code_input = Validation.get_valid_input(
+                "\nEnter your restore code (or 'cancel' to stop): ",
+                Validation.restore_code_validation,
+                current_user.username,
+                "restore code"
+            )
+            if code_input is None:
                 print("Backup restoration cancelled.")
                 general_methods.hidden_input("\nPress Enter to return to the backup menu...")
                 return
@@ -309,16 +318,18 @@ class BackupManager:
         print("You will need to log in again after the restore process is complete.")
 
         while True:
-            confirm = input(f"WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
-            if confirm == 'y':
-                break
-            elif confirm == 'n':
+            confirm_choice = Validation.get_valid_input(
+                "WARNING: This will replace all data (except logs & restore codes). Continue? (yes/no): ",
+                Validation.yes_no_validation,
+                current_user.username,
+                "confirmation"
+            )
+            if confirm_choice is None or confirm_choice.lower() == 'no':
                 print("Backup restoration cancelled.")
                 time.sleep(1)
                 return False
-            else:
-                print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
-                log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
+            if confirm_choice.lower() == 'yes':
+                break
 
         # Restore (table-safe) and consume the code
         if BackupManager.restore_database_from_backup(backup_path, current_user):
@@ -327,7 +338,7 @@ class BackupManager:
             print("Please restart the application and log in again.")
             sys.exit(0)
         else:
-            print("\n❌ Restore failed.")
+            print("\nRestore failed.")
             log_instance.addlog(current_user.username, "Restore backup failed", "Unknown error occurred", True)
             time.sleep(1)
             return False
@@ -390,38 +401,40 @@ class BackupManager:
         index = None
 
         while True:
-            choice = input("\nEnter the number of the code to revoke (or 'c' to cancel): ").strip().lower()
-            if choice == 'c':
+            choice = Validation.get_valid_input(
+                "\nEnter the number of the code to revoke (or 'cancel' to stop): ",
+                Validation.get_valid_id_input,
+                current_user.username,
+                "restore code selection"
+            )
+            if choice is None:
                 print("Operation cancelled.")
                 time.sleep(1)
                 return
 
-            try:
-                idx = int(choice) - 1
-                if 0 <= idx < len(codes):
-                    index = idx
-                    break
-                else:
-                    print(f"Please enter a number between 1 and {len(codes)}.")
-                    log_instance.log_invalid_input(current_user.username, "restore code selection",
-                                                f"Invalid code index: {idx + 1}")
-            except ValueError:
-                print("Please enter a valid number.")
+            idx = int(choice) - 1
+            if 0 <= idx < len(codes):
+                index = idx
+                break
+            else:
+                print(f"Please enter a number between 1 and {len(codes)}.")
                 log_instance.log_invalid_input(current_user.username, "restore code selection",
-                                            f"Invalid input: {choice}")
+                                            f"Invalid code index: {idx + 1}")
 
         # Confirm revocation
         while True:
-            confirm = input(f"Are you sure you want to revoke the restore code {codes[index]['code']}? (y/n): ").strip().lower()
-            if confirm == 'y':
-                break
-            elif confirm == 'n':
+            confirm = Validation.get_valid_input(
+                f"Are you sure you want to revoke the restore code {codes[index]['code']}? (yes/no): ",
+                Validation.yes_no_validation,
+                current_user.username,
+                "confirmation"
+            )
+            if confirm is None or confirm.lower() == 'no':
                 print("Operation cancelled.")
                 time.sleep(1)
                 return
-            else:
-                print("Invalid input. Please enter 'y' to confirm or 'n' to cancel.")
-                log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
+            if confirm.lower() == 'yes':
+                break
 
         # Revoke
         store.consume_code_by_index(index)
@@ -474,25 +487,26 @@ class BackupManager:
         selected_backup = None
 
         while not backup_selection_valid:
-            choice = input("\nEnter the number of the backup you want to restore (or 'c' to cancel): ")
+            choice = Validation.get_valid_input(
+                "\nEnter the number of the backup you want to restore (or 'cancel' to stop): ",
+                Validation.get_valid_id_input,
+                current_user.username,
+                "backup selection"
+            )
             
-            if choice.lower() == 'c':
+            if choice is None:
                 print("Backup restoration cancelled.")
                 return False
             
-            try:
-                choice_index = int(choice) - 1
-                
-                if 0 <= choice_index < len(backups):
-                    selected_backup = backups[choice_index]
-                    backup_selection_valid = True
-                else:
-                    print(f"Please enter a number between 1 and {len(backups)}.")
-                    log_instance.log_invalid_input(current_user.username, "backup selection", 
-                                                f"Invalid backup index: {choice_index + 1}")
-            except ValueError:
-                print("Please enter a valid number.")
-                log_instance.log_invalid_input(current_user.username, "backup selection", f"Invalid backup selection input: {choice}")
+            choice_index = int(choice) - 1
+            
+            if 0 <= choice_index < len(backups):
+                selected_backup = backups[choice_index]
+                backup_selection_valid = True
+            else:
+                print(f"Please enter a number between 1 and {len(backups)}.")
+                log_instance.log_invalid_input(current_user.username, "backup selection", 
+                                            f"Invalid backup index: {choice_index + 1}")
                 
         
         selected_backup_path = os.path.join(backup_dir, selected_backup)
@@ -502,15 +516,17 @@ class BackupManager:
         print("You will need to log in again after the restore process is complete.")
 
         while True:
-            confirm = input("WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
-            if confirm == 'y':
-                break
-            elif confirm == 'n':
+            confirm = Validation.get_valid_input(
+                "WARNING: This will replace all data (except logs & restore codes). Continue? (yes/no): ",
+                Validation.yes_no_validation,
+                current_user.username,
+                "confirmation"
+            )
+            if confirm is None or confirm.lower() == 'no':
                 print("Backup restoration cancelled.")
                 return False
-            else:
-                print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
-                log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
+            if confirm.lower() == 'yes':
+                break
 
         try:
             # Use the table-safe restore (logs & restore codes preserved)
@@ -520,7 +536,7 @@ class BackupManager:
                 print("Please restart the application and log in again.")
                 sys.exit(0)
             else:
-                print("\n❌ Restore failed.")
+                print("\nRestore failed.")
                 time.sleep(1)
                 return False
         except Exception as e:
