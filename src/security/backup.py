@@ -477,6 +477,21 @@ class BackupManager:
         
         selected_backup_path = os.path.join(backup_dir, selected_backup)
 
+        # Confirm destructive operation (consistency with System Admin flow)
+        print("\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
+        print("You will need to log in again after the restore process is complete.")
+
+        while True:
+            confirm = input("WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
+            if confirm == 'y':
+                break
+            elif confirm == 'n':
+                print("Backup restoration cancelled.")
+                return False
+            else:
+                print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
+                log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
+
         try:
             # Use the table-safe restore (logs & restore codes preserved)
             if BackupManager.restore_database_from_backup(selected_backup_path, current_user):

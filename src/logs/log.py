@@ -68,45 +68,87 @@ class LogFunction():
         self.addlog(username=username, action=action, details=details, suspicious=suspicious)
     
     def show_logs(self, current_user):
-        """Toon alle logs met decryptie van versleutelde velden."""
-            
+        """Display all logs (decrypting encrypted fields) with simple pagination."""
+
+        PAGE_SIZE = 50
         self.openConnection()
-        key = load_symmetric_key()  # Load the symmetric key for decryption
-        
+        key = load_symmetric_key()
+
         try:
-            self.cursor.execute('SELECT id, Date, username, action, details, suspicious FROM logs ORDER BY date DESC')
-            rows = self.cursor.fetchall()
-            
-            if not rows:
+            # Count total logs
+            self.cursor.execute('SELECT COUNT(*) FROM logs')
+            total = self.cursor.fetchone()[0]
+            if total == 0:
                 print("No logs found.")
                 return
-                
-            print("\n--- System Logs ---")
-            print(f"{'ID':<5} {'Date':<20} {'Username':<15} {'Action':<35} {'Details':<50} {'Suspicious':<10}")
-            print("-" * 132)
-            
-            for row in rows:
-                log_id = row[0]
-                date = row[1]  # Timestamp is usually not encrypted
 
-                # Decrypt the fields that are encrypted
-                username = decrypt_message(row[2], key) if row[2] else "N/A"
-                action = decrypt_message(row[3], key) if row[3] else "N/A"
-                details = decrypt_message(row[4], key) if row[4] else "N/A"
+            total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
+            page = 0
 
-                # Suspicious is often a boolean or integer
+            while True:
+                offset = page * PAGE_SIZE
+                # Order newest first (DESC)
+                self.cursor.execute(
+                    'SELECT id, date, username, action, details, suspicious FROM logs ORDER BY date DESC LIMIT ? OFFSET ?',
+                    (PAGE_SIZE, offset)
+                )
+                rows = self.cursor.fetchall()
 
-                suspicious = "Yes" if decrypt_message(row[5], key)  == "True" else "No"
+                general_methods.clear_console()
+                print("----------------------------------------------------------------------------")
+                print("|" + "Logs".center(75) + "|")
+                print("----------------------------------------------------------------------------")
+                print(f"Page {page+1}/{total_pages} | Showing {len(rows)} of {total}")
+                print(f"{'ID':<5} {'Date':<20} {'Username':<15} {'Action':<35} {'Details':<50} {'Suspicious':<10}")
+                print("-" * 132)
 
-                # Limit the length of fields for neat alignment
-                username = username[:15]
-                action = action[:35]
-                details = details[:50]
+                for row in rows:
+                    log_id = row[0]
+                    date = row[1]
 
-                print(f"{log_id:<5} {date:<20} {username:<15} {action:<35} {details:<50} {suspicious:<10}")
+                    username = decrypt_message(row[2], key) if row[2] else "N/A"
+                    action = decrypt_message(row[3], key) if row[3] else "N/A"
+                    details = decrypt_message(row[4], key) if row[4] else "N/A"
+                    suspicious = "Yes" if decrypt_message(row[5], key) == "True" else "No"
 
-            print("-" * 132)
-            general_methods.hidden_input("\nPress Enter to return to the menu...")
+                    # Limit the length of fields for neat alignment
+                    username = username[:15]
+                    action = action[:35]
+                    details = details[:50]
+
+                    print(f"{log_id:<5} {date:<20} {username:<15} {action:<35} {details:<50} {suspicious:<10}")
+
+                print("-" * 132)
+                cmd = input("(n)ext, (p)revious, (g)o to page, (q)uit: ").strip().lower()
+                if cmd == 'n':
+                    if page + 1 < total_pages:
+                        page += 1
+                    else:
+                        print("Already at last page.")
+                        general_methods.hidden_input("Press Enter...")
+                elif cmd == 'p':
+                    if page > 0:
+                        page -= 1
+                    else:
+                        print("Already at first page.")
+                        general_methods.hidden_input("Press Enter...")
+                elif cmd == 'g':
+                    target = input(f"Enter page number (1-{total_pages}): ").strip()
+                    if target.isdigit():
+                        idx = int(target) - 1
+                        if 0 <= idx < total_pages:
+                            page = idx
+                        else:
+                            print("Invalid page number.")
+                            general_methods.hidden_input("Press Enter...")
+                    else:
+                        print("Please enter a valid number.")
+                        general_methods.hidden_input("Press Enter...")
+                elif cmd == 'q':
+                    break
+                else:
+                    print("Invalid choice.")
+                    general_methods.hidden_input("Press Enter...")
 
         except Exception as e:
             print(f"An error occurred while retrieving logs: {e}")
@@ -127,16 +169,15 @@ class LogFunction():
         self.openConnection()
         key = load_symmetric_key()
         try:
-        # Retrieve all logs to filter them after decryption
-            self.cursor.execute('SELECT id, Date, username, action, details, suspicious, is_read FROM logs ORDER BY date DESC')
+            # Retrieve all logs (order newest first for natural reading); suspicious flag is encrypted
+            self.cursor.execute('SELECT id, date, username, action, details, suspicious, is_read FROM logs ORDER BY date DESC')
             rows = self.cursor.fetchall()
 
-            # Filter the logs where suspicious after decryption is "True"
+            # Filter the logs where suspicious after decryption is "True" and unread
             unread_suspicious_logs = []
             for row in rows:
                 suspicious_value = decrypt_message(row[5], key)
                 is_read = row[6]
-
                 if suspicious_value == "True" and is_read == 0:
                     unread_suspicious_logs.append(row)
 
@@ -144,13 +185,14 @@ class LogFunction():
                 print("No unread suspicious logs found.")
                 return
 
+            # Display all unread suspicious logs without pagination
             print("\n--- Unread Suspicious Logs ---")
             print(f"{'ID':<5} {'Date':<20} {'Username':<15} {'Action':<35} {'Details':<50}")
             print("-" * 100)
 
             for row in unread_suspicious_logs:
                 log_id = row[0]
-                date = row[1]  # Timestamp is usually not encrypted
+                date = row[1]
                 username = decrypt_message(row[2], key) if row[2] else "N/A"
                 action = decrypt_message(row[3], key) if row[3] else "N/A"
                 details = decrypt_message(row[4], key) if row[4] else "N/A"
@@ -163,26 +205,21 @@ class LogFunction():
                 print(f"{log_id:<5} {date:<20} {username:<15} {action:<35} {details:<50}")
 
             print("-" * 100)
-            
-            mark_as_read = input("Do you want to mark these logs as read? (y/n): ").strip().lower()
-        
-            if mark_as_read == 'y' or mark_as_read == 'yes':
-                # Mark the logs as read
-                log_ids = [row[0] for row in unread_suspicious_logs]
 
-                # Update the logs with placeholders for each ID
+            # After displaying, ask to mark all unread suspicious logs as read
+            mark_as_read = input("Do you want to mark ALL unread suspicious logs as read? (y/n): ").strip().lower()
+            if mark_as_read in ('y', 'yes'):
+                log_ids = [row[0] for row in unread_suspicious_logs]
                 placeholders = ', '.join(['?' for _ in log_ids])
                 update_query = f"UPDATE logs SET is_read = 1 WHERE id IN ({placeholders})"
-                
                 self.cursor.execute(update_query, log_ids)
                 self.db.commit()
-                
-                print(f"Successfully marked {len(log_ids)} logs as read.")
 
-                # Log this action
+                print(f"Successfully marked {len(log_ids)} logs as read.")
+                # Log this action via encrypted logger
                 self.addlog(
-                    username=current_user.username, 
-                    action="Marked logs as read", 
+                    username=current_user.username,
+                    action="Marked logs as read",
                     details=f"Administrator marked {len(log_ids)} suspicious logs as read",
                     suspicious=False
                 )
