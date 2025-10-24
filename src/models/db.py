@@ -107,7 +107,7 @@ def initialize_database():
             except:
                 # Decryption failed - this is a plain integer value that needs encryption
                 # Convert to string and encrypt
-                if temp_pass in (0, 1):
+                if temp_pass in (0, 1, '0', '1'):
                     encrypted_value = encrypt_message(str(temp_pass), key)
                     cursor.execute("UPDATE users SET temporary_password = ? WHERE id = ?", (encrypted_value, user_id))
                     migrated_count += 1
