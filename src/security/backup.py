@@ -135,10 +135,12 @@ class BackupManager:
 
         # List system admins
         conn = open_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role FROM users")
-        all_users = cursor.fetchall()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, username, role FROM users")
+            all_users = cursor.fetchall()
+        finally:
+            conn.close()
 
         system_admins = []
         for user in all_users:
@@ -343,10 +345,12 @@ class BackupManager:
         # Build admin name lookup for display (from users table)
         key = load_symmetric_key()
         conn = open_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, username FROM users")
-        all_users = cursor.fetchall()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, username FROM users")
+            all_users = cursor.fetchall()
+        finally:
+            conn.close()
 
         admin_usernames = {}
         for user_id, username_encrypted in all_users:
@@ -508,45 +512,49 @@ class BackupManager:
         # STEP 2: Open current & backup DB
         conn_current = open_connection()
         conn_backup = sqlite3.connect(temp_db)
-        cur_current = conn_current.cursor()
-        cur_backup = conn_backup.cursor()
+        
+        try:
+            cur_current = conn_current.cursor()
+            cur_backup = conn_backup.cursor()
 
-        # STEP 3: Copy tables except logs (and system tables)
-        tables_to_skip = {"logs"}
+            # STEP 3: Copy tables except logs (and system tables)
+            tables_to_skip = {"logs"}
 
-        cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cur_backup.fetchall()]
+            cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cur_backup.fetchall()]
 
-        for table in tables:
-            # Validate identifier and skip disallowed/system tables
-            if not is_safe_identifier(table) or table in tables_to_skip:
-                continue
+            for table in tables:
+                # Validate identifier and skip disallowed/system tables
+                if not is_safe_identifier(table) or table in tables_to_skip:
+                    continue
 
-            # Use the validated identifier directly (no quoting needed)
-            qname = table
+                # Use the validated identifier directly (no quoting needed)
+                qname = table
 
-            # wipe current table
-            cur_current.execute(f'DELETE FROM {qname}')
+                # wipe current table
+                cur_current.execute(f'DELETE FROM {qname}')
 
-            # restore data
-            cur_backup.execute(f'SELECT * FROM {qname}')
-            rows = cur_backup.fetchall()
-            if rows:
-                placeholders = ", ".join("?" * len(rows[0]))
-                cur_current.executemany(
-                    f'INSERT INTO {qname} VALUES ({placeholders})',
-                    rows
-                )
+                # restore data
+                cur_backup.execute(f'SELECT * FROM {qname}')
+                rows = cur_backup.fetchall()
+                if rows:
+                    placeholders = ", ".join("?" * len(rows[0]))
+                    cur_current.executemany(
+                        f'INSERT INTO {qname} VALUES ({placeholders})',
+                        rows
+                    )
 
-        # STEP 4: Commit & close
-        conn_current.commit()
-        conn_backup.close()
-        conn_current.close()
+            # STEP 4: Commit
+            conn_current.commit()
+        finally:
+            # STEP 5: Close connections
+            conn_backup.close()
+            conn_current.close()
 
-        # STEP 5: Cleanup
+        # STEP 6: Cleanup
         os.remove(temp_db)
 
-        # STEP 6: Log the restore event
+        # STEP 7: Log the restore event
         from logs.log import log_instance
         log_instance.addlog(
             current_user.username,

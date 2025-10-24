@@ -111,12 +111,7 @@ def delete_scooter(serial_number):
     key = load_symmetric_key()
     
     try:
-        # First find the scooter with the given serial_number
-        cursor.execute('SELECT id FROM scooters')
-        rows = cursor.fetchall()
-        # scooter_id = None
-
-        # First find all rows
+        # First find all rows with id and serial_number
         cursor.execute('SELECT id, serial_number FROM scooters')
         rows = cursor.fetchall()
 
