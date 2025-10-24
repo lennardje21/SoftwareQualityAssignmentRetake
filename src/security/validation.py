@@ -19,12 +19,19 @@ class Validation:
     @staticmethod
     def get_valid_range_input(prompt_min, prompt_max, validation_fn, username, field_name):
         while True:
-            min_value = input(prompt_min).strip()
-            max_value = input(prompt_max).strip()
-            if validation_fn(min_value, max_value, username):
-                return min_value, max_value
-            print(f"Invalid {field_name}: {min_value}-{max_value}. Please try again.")
-            log_instance.log_invalid_input(username, field_name, "Invalid range input")
+            min_val = input(prompt_min).strip()
+            if min_val.lower() == "cancel":
+                return None, None
+
+            max_val = input(prompt_max).strip()
+            if max_val.lower() == "cancel":
+                return None, None
+
+            if validation_fn(min_val, max_val, username):
+                return min_val, max_val
+
+            print(f"Invalid range: {min_val}-{max_val}. Please try again or type 'cancel'.")
+
 
     @staticmethod
     def is_valid_search_input(query: str, username) -> bool:
@@ -37,12 +44,19 @@ class Validation:
     @staticmethod
     def get_valid_coordinates(prompt_lat, prompt_lon, validation_fn, username):
         while True:
-            lat_input = input(prompt_lat).strip()
-            lon_input = input(prompt_lon).strip()
-            if validation_fn(lat_input, lon_input, username):
-                return lat_input, lon_input
-            print(f"Invalid location: {lat_input}, {lon_input}. Please try again.")
-            log_instance.log_invalid_input(username, "location", "Invalid coordinates")
+            lat = input(prompt_lat).strip()
+            if lat.lower() == "cancel":
+                return None, None
+
+            lon = input(prompt_lon).strip()
+            if lon.lower() == "cancel":
+                return None, None
+
+            if validation_fn(lat, lon, username):
+                return lat, lon
+
+            print(f"Invalid coordinates: {lat}, {lon}. Please try again or type 'cancel'.")
+
 
     @staticmethod
     def get_valid_id_input(id: str, username: str):
