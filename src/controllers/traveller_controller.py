@@ -441,7 +441,7 @@ def delete_traveller_controller(current_user):
         current_user.username,
         "confirmation"
     )
-    if confirm == "no":  # Whitelist: only exact "yes" proceeds
+    if confirm == "no":  # Exit if user confirms no
         print("Deletion cancelled.")
         time.sleep(1)
         return
