@@ -210,7 +210,6 @@ def add_scooter(current_user):
 
     general_methods.hidden_input("\nPress Enter to return...")
 
-
 def show_scooters(current_user):
     require_authorization(current_user, 'show_scooter')
     general_methods.clear_console()
@@ -268,8 +267,13 @@ def deleting_scooter(current_user):
 
     # --- INPUT LOOP FOR SERIAL ---
     while True:
-        serial_input = input("\nEnter the SERIAL NUMBER of the scooter to delete (or 'cancel'): ").strip()
-        if serial_input.lower() == "cancel":
+        serial_input = Validation.get_valid_input(
+            prompt="\nEnter the SERIAL NUMBER of the scooter to delete (or 'cancel'): ",
+            validation_fn=Validation.serial_number_validation,
+            username=username,
+            field_name="serial number"
+        )
+        if serial_input is None:
             print("Deletion cancelled.")
             return
 
@@ -282,13 +286,20 @@ def deleting_scooter(current_user):
         break
 
     # --- CONFIRM ---
-    confirmation = input(
-        f"Are you sure you want to delete scooter '{getattr(scooter, 'serial_number', '')}' "
-        f"({getattr(scooter, 'brand', '')} {getattr(scooter, 'model', '')})? (yes/no): "
-    ).strip().lower()
+    confirmation = Validation.get_valid_input(
+        prompt=(
+            f"Are you sure you want to delete scooter '{getattr(scooter, 'serial_number', '')}' "
+            f"({getattr(scooter, 'brand', '')} {getattr(scooter, 'model', '')})? (yes/no): "
+        ),
+        validation_fn=Validation.yes_no_validation,
+        username=username,
+        field_name="confirmation"
+    )
 
-    if confirmation != "yes":
+    # Treat cancel or any answer other than 'yes' as cancel; proceed only on exact 'yes'
+    if confirmation is None or confirmation.lower() != "yes":
         print("Deletion cancelled.")
+        general_methods.hidden_input("\nPress Enter to return...")
         return
 
     # --- DELETE VIA MODEL (by serial number) ---
@@ -307,7 +318,6 @@ def deleting_scooter(current_user):
         log_instance.addlog(username, "Scooter delete failed", getattr(scooter, 'serial_number', ''), True)
 
     general_methods.hidden_input("\nPress Enter to return...")
-
 
 def update_scooter_controller(current_user):
     require_authorization(current_user, 'update_scooter')

@@ -441,9 +441,10 @@ def delete_traveller_controller(current_user):
         current_user.username,
         "confirmation"
     )
-    if confirm == "no":  # Exit if user confirms no
+    # Proceed only on exact 'yes'; treat cancel or anything else as cancel
+    if confirm is None or confirm.lower() != "yes":
         print("Deletion cancelled.")
-        time.sleep(1)
+        general_methods.hidden_input("\nPress Enter to return...")
         return
 
     # --- DELETE ---
