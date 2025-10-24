@@ -118,7 +118,7 @@ def add_scooter(current_user):
 
     # 5. BATTERY CAPACITY
     battery_capacity = Validation.get_valid_input(
-        prompt="Battery Capacity 50-2000 Wh (or type 'cancel'): ",
+        prompt="Battery Capacity 50-2000 mAh (or type 'cancel'): ",
         validation_fn=Validation.battery_capacity_validation,
         username=username,
         field_name="battery capacity"
@@ -375,7 +375,7 @@ def update_scooter_controller(current_user):
         '1': ('brand', "Brand (or 'cancel'): ", Validation.brand_validation, str),
         '2': ('model', "Model (or 'cancel'): ", Validation.model_validation, str),
         '4': ('top_speed', "Top Speed km/h (or 'cancel'): ", Validation.top_speed_validation, int),
-        '5': ('battery_capacity', "Battery Capacity 50-2000 Wh (or 'cancel'): ", Validation.battery_capacity_validation, int),
+        '5': ('battery_capacity', "Battery Capacity 50-2000 mAh (or 'cancel'): ", Validation.battery_capacity_validation, int),
         '6': ('soc', "State of Charge 0-100 (or 'cancel'): ", Validation.soc_single_value, int),
         '10': ('mileage', "Mileage (or 'cancel'): ", Validation.mileage_validation, int),
         '11': ('last_maintenance_date', "Last Maintenance Date YYYY-MM-DD (or 'cancel'): ", Validation.last_maintenance_date_validation, str),
