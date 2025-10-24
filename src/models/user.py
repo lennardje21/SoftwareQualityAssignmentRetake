@@ -158,7 +158,6 @@ def update_password(username, new_password):
 
 def clear_temporary_passwords(user_id):
     """Clear the temporary password flag for a user with id."""
-    # print("DEBUG: Clearing temporary password for user_id:", user_id)
     conn = open_connection()
     cursor = conn.cursor()
     try:

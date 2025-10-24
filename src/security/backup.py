@@ -317,7 +317,7 @@ class BackupManager:
             print("Please restart the application and log in again.")
             sys.exit(0)
         else:
-            print("\nRestore failed.")
+            print("\n❌ Restore failed.")
             return False
 
 
@@ -477,6 +477,21 @@ class BackupManager:
         
         selected_backup_path = os.path.join(backup_dir, selected_backup)
 
+        # Confirm destructive operation (consistency with System Admin flow)
+        print("\nIMPORTANT: After restoring the backup, you will be logged out automatically for security reasons.")
+        print("You will need to log in again after the restore process is complete.")
+
+        while True:
+            confirm = input("WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
+            if confirm == 'y':
+                break
+            elif confirm == 'n':
+                print("Backup restoration cancelled.")
+                return False
+            else:
+                print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
+                log_instance.log_invalid_input(current_user.username, "confirmation", f"Invalid confirmation input: {confirm}")
+
         try:
             # Use the table-safe restore (logs & restore codes preserved)
             if BackupManager.restore_database_from_backup(selected_backup_path, current_user):
@@ -485,7 +500,7 @@ class BackupManager:
                 print("Please restart the application and log in again.")
                 sys.exit(0)
             else:
-                print("\nRestore failed.")
+                print("\n❌ Restore failed.")
                 return False
         except Exception as e:
             print(f"Error restoring backup: {e}")
@@ -502,7 +517,7 @@ class BackupManager:
         base_dir, db_path, backup_dir = BackupManager.get_paths()
         temp_db = os.path.join(base_dir, 'data', 'temp_restore.db')
 
-        # STEP 1: Extract backup -> temp DB
+        # STEP 1: Extract backup → temp DB
         if backup_path.endswith('.zip'):
             if not BackupManager.extract_db_from_zip(backup_path, temp_db, current_user):
                 return False
