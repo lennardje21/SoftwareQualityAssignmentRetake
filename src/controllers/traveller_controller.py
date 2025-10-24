@@ -434,17 +434,15 @@ def delete_traveller_controller(current_user):
         break
 
     # --- CONFIRM DELETION ---
-    while True:
-        confirm = input("Are you sure you want to delete this traveller? (yes/no): ").strip().lower()
-        if Validation.contains_null_byte(confirm):
-            print("Invalid input: null bytes are not allowed.")
-            log_instance.log_invalid_input(current_user.username, "confirmation", "Null byte detected", suspicious=True)
-            continue
-        if confirm != "yes":
-            print("Deletion cancelled.")
-            return
-        break
-
+    confirm = input("Are you sure you want to delete this traveller? (yes/no): ").strip().lower()
+    if Validation.contains_null_byte(confirm):
+        print("Invalid input: null bytes are not allowed.")
+        log_instance.log_invalid_input(current_user.username, "confirmation", "Null byte detected", suspicious=True)
+        print("Deletion cancelled.")
+        return
+    if confirm != "yes":
+        print("Deletion cancelled.")
+        return
     # --- DELETE ---
     if delete_traveller(target_id):
         print("\nTraveller deleted successfully.")
