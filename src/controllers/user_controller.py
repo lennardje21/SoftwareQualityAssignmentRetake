@@ -105,6 +105,10 @@ def create_new_user(current_user):
         username = input("Enter username (or 'cancel' to stop): ").strip().lower()
         if username == "cancel":
             return
+        if Validation.contains_null_byte(username):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(current_user.username, "username", "Null byte detected", suspicious=True)
+            continue
         if Validation.username_validation(username):
             if get_user_by_username(username):
                 print("Username already exists. Please try again.")
@@ -132,6 +136,10 @@ def create_new_user(current_user):
         role = input(f"Enter role ({', '.join(role_options)}) (or 'cancel' to stop): ").strip().lower()
         if role == "cancel":
             return
+        if Validation.contains_null_byte(role):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(current_user.username, "role", "Null byte detected", suspicious=True)
+            continue
         if role in role_lookup:
             chosen_role = role_lookup[role]
             print(f"Selected role: {chosen_role}")
@@ -265,6 +273,10 @@ def delete_user_account(current_user):
     # --- CONFIRMATION STEP ---
     while True:
         confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no/cancel): ").strip().lower()
+        if Validation.contains_null_byte(confirmation):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(current_user.username, "confirmation", "Null byte detected", suspicious=True)
+            continue
         if confirmation in {"no", "cancel"}:
             print("Deletion cancelled.")
             return
@@ -365,6 +377,11 @@ def update_user_account(current_user):
                     print("Update cancelled.")
                     return
 
+                if Validation.contains_null_byte(new_username):
+                    print("Invalid input: null bytes are not allowed.")
+                    log_instance.log_invalid_input(current_user.username, "username", "Null byte detected", suspicious=True)
+                    continue
+
                 if not Validation.username_validation(new_username):
                     continue  # format invalid -> retry
 
@@ -439,6 +456,10 @@ def change_own_password(current_user) -> bool:
     # Eerst: 3 pogingen voor huidig wachtwoord
     for attempt in range(3):
         old_password = input("Enter your current password: ").strip()
+        if Validation.contains_null_byte(old_password):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(current_user.username, "password", "Null byte detected", suspicious=True)
+            continue
         if validate_password(old_password, stored_hash):
             break  # correct -> ga door
         else:
@@ -495,6 +516,11 @@ def reset_user_password(current_user):
         if user_input.lower() == "cancel":
             print("Password reset cancelled.")
             return
+
+        if Validation.contains_null_byte(user_input):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(current_user.username, "user_id", "Null byte detected", suspicious=True)
+            continue
 
         # Use existing ID validator (shared logic)
         if not Validation.get_valid_id_input(user_input, current_user.username):

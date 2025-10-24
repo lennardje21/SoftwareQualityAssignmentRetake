@@ -273,6 +273,11 @@ def deleting_scooter(current_user):
             print("Deletion cancelled.")
             return
 
+        if Validation.contains_null_byte(serial_input):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(username, "serial_number", "Null byte detected", suspicious=True)
+            continue
+
         # Find scooter locally first to avoid useless DB calls
         scooter = next((x for x in scooters if getattr(x, 'serial_number', '') == serial_input), None)
         if not scooter:
@@ -282,14 +287,21 @@ def deleting_scooter(current_user):
         break
 
     # --- CONFIRM ---
-    confirmation = input(
-        f"Are you sure you want to delete scooter '{getattr(scooter, 'serial_number', '')}' "
-        f"({getattr(scooter, 'brand', '')} {getattr(scooter, 'model', '')})? (yes/no): "
-    ).strip().lower()
+    while True:
+        confirmation = input(
+            f"Are you sure you want to delete scooter '{getattr(scooter, 'serial_number', '')}' "
+            f"({getattr(scooter, 'brand', '')} {getattr(scooter, 'model', '')})? (yes/no): "
+        ).strip().lower()
 
-    if confirmation != "yes":
-        print("Deletion cancelled.")
-        return
+        if Validation.contains_null_byte(confirmation):
+            print("Invalid input: null bytes are not allowed.")
+            log_instance.log_invalid_input(username, "confirmation", "Null byte detected", suspicious=True)
+            continue
+
+        if confirmation != "yes":
+            print("Deletion cancelled.")
+            return
+        break
 
     # --- DELETE VIA MODEL (by serial number) ---
     try:

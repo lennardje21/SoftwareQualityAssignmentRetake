@@ -201,6 +201,14 @@ class BackupManager:
 
         while not backup_found:
             backup_choice = input("\nEnter the number of the backup you wish to link: ").strip()
+            
+            # Null byte check
+            if Validation.contains_null_byte(backup_choice):
+                print("Invalid input detected. Null bytes are not allowed.")
+                log_instance.log_invalid_input(current_user.username, "backup selection",
+                                            "Null byte in backup selection", suspicious=True)
+                continue
+            
             try:
                 backup_index = int(backup_choice) - 1
                 if backup_index in range(len(backups)):
@@ -263,6 +271,21 @@ class BackupManager:
 
         while attempts < MAX_RESTORE_CODE_ATTEMPTS:
             code_input = input("\nEnter your restore code (or 'c' to cancel): ").strip()
+            
+            # Null byte check
+            if Validation.contains_null_byte(code_input):
+                print("Invalid input detected. Null bytes are not allowed.")
+                log_instance.log_invalid_input(current_user.username, "restore code input",
+                                            "Null byte in restore code", suspicious=True)
+                attempts += 1
+                if attempts >= MAX_RESTORE_CODE_ATTEMPTS:
+                    print("Too many failed attempts to enter a valid restore code.")
+                    log_instance.addlog(current_user.username, "system administrator restore backup",
+                                        f"Multiple failed restore code attempts ({attempts})", True)
+                    print("For security reasons, you have been logged out.")
+                    sys.exit(1)
+                continue
+            
             if code_input.lower() == 'c':
                 print("Backup restoration cancelled.")
                 general_methods.hidden_input("\nPress Enter to return to the backup menu...")
@@ -301,6 +324,14 @@ class BackupManager:
 
         while True:
             confirm = input(f"WARNING: This will replace all data (except logs & restore codes). Continue? (y/n): ").strip().lower()
+            
+            # Null byte check
+            if Validation.contains_null_byte(confirm):
+                print("Invalid input detected. Null bytes are not allowed.")
+                log_instance.log_invalid_input(current_user.username, "restore confirmation",
+                                            "Null byte in confirmation", suspicious=True)
+                continue
+            
             if confirm == 'y':
                 break
             elif confirm == 'n':
@@ -317,7 +348,7 @@ class BackupManager:
             print("Please restart the application and log in again.")
             sys.exit(0)
         else:
-            print("\n❌ Restore failed.")
+            print("\nRestore failed.")
             return False
 
 
@@ -376,6 +407,14 @@ class BackupManager:
 
         while True:
             choice = input("\nEnter the number of the code to revoke (or 'c' to cancel): ").strip().lower()
+            
+            # Null byte check
+            if Validation.contains_null_byte(choice):
+                print("Invalid input detected. Null bytes are not allowed.")
+                log_instance.log_invalid_input(current_user.username, "restore code selection",
+                                            "Null byte in code selection", suspicious=True)
+                continue
+            
             if choice == 'c':
                 print("Operation cancelled.")
                 return
@@ -397,6 +436,14 @@ class BackupManager:
         # Confirm revocation
         while True:
             confirm = input(f"Are you sure you want to revoke the restore code {codes[index]['code']}? (y/n): ").strip().lower()
+            
+            # Null byte check
+            if Validation.contains_null_byte(confirm):
+                print("Invalid input detected. Null bytes are not allowed.")
+                log_instance.log_invalid_input(current_user.username, "revoke confirmation",
+                                            "Null byte in confirmation", suspicious=True)
+                continue
+            
             if confirm == 'y':
                 break
             elif confirm == 'n':
@@ -500,7 +547,7 @@ class BackupManager:
                 print("Please restart the application and log in again.")
                 sys.exit(0)
             else:
-                print("\n❌ Restore failed.")
+                print("\nRestore failed.")
                 return False
         except Exception as e:
             print(f"Error restoring backup: {e}")
@@ -517,7 +564,7 @@ class BackupManager:
         base_dir, db_path, backup_dir = BackupManager.get_paths()
         temp_db = os.path.join(base_dir, 'data', 'temp_restore.db')
 
-        # STEP 1: Extract backup → temp DB
+        # STEP 1: Extract backup -> temp DB
         if backup_path.endswith('.zip'):
             if not BackupManager.extract_db_from_zip(backup_path, temp_db, current_user):
                 return False

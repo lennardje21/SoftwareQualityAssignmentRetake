@@ -104,7 +104,7 @@ def initialize_database():
     #     CREATE TABLE IF NOT EXISTS restore_codes (
     #         id INTEGER PRIMARY KEY AUTOINCREMENT,
     #         code TEXT NOT NULL UNIQUE,
-    #         system_admin_id TEXT NOT NULL,  -- Geëncrypte waarde, dus TEXT type
+    #         system_admin_id TEXT NOT NULL,  -- Encrypted value, thus TEXT type
     #         backup_filename TEXT NOT NULL,
     #         FOREIGN KEY(system_admin_id) REFERENCES users(id)
     #     )

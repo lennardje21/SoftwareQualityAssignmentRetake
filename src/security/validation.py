@@ -102,7 +102,7 @@ class Validation:
         if re.fullmatch(r"[1-9]\d{0,7}", id):  # 1 t/m 99999999 (max 8 numbers, no leading zero)
             return True
 
-        print(f"Invalid ID: {id}. Must be a positive number ≤ 99999999 without leading zeros.")
+        print(f"Invalid ID: {id}. Must be a positive number <= 99999999 without leading zeros.")
         log_instance.log_invalid_input(username, "id", f"Invalid ID input: {id}")
         return False
 
