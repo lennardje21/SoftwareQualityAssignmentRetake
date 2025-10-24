@@ -8,6 +8,7 @@ import string
 import zipfile
 from datetime import datetime
 import re
+import time
 
 # Local application imports
 from controllers.rolecheck import is_authorized
@@ -18,16 +19,24 @@ from security.encryption import load_symmetric_key, encrypt_message, decrypt_mes
 from security.validation import Validation
 
 
-# --- Helper functions for safe SQL identifier handling ---
+# --- Helper function for additional table name validation (defense-in-depth) ---
 def is_safe_identifier(name: str) -> bool:
-    """Allow only simple SQLite identifiers (letters, digits, underscore),
-    starting with a letter or underscore, and not a system table."""
+    """
+    Validate that a table name is a safe SQL identifier.
+    
+    This is a defense-in-depth measure - the primary security comes from
+    the explicit whitelist in TABLE_OPERATIONS, but this catches obviously
+    malicious table names early.
+    
+    Args:
+        name: Table name to validate
+        
+    Returns:
+        True if name is a valid identifier, False otherwise
+    """
+    # Must match: letter/underscore followed by letters/digits/underscores
+    # Must NOT start with sqlite_ (system tables)
     return bool(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name)) and not name.startswith("sqlite_")
-
-
-def quote_ident(name: str) -> str:
-    """Quote an SQL identifier safely for SQLite by doubling internal quotes."""
-    return '"' + name.replace('"', '""') + '"'
 
 
 class BackupManager:
@@ -305,6 +314,7 @@ class BackupManager:
                 break
             elif confirm == 'n':
                 print("Backup restoration cancelled.")
+                time.sleep(1)
                 return False
             else:
                 print("Invalid input. Please enter 'y' to continue or 'n' to cancel.")
@@ -317,7 +327,9 @@ class BackupManager:
             print("Please restart the application and log in again.")
             sys.exit(0)
         else:
-            print("\nRestore failed.")
+            print("\n❌ Restore failed.")
+            log_instance.addlog(current_user.username, "Restore backup failed", "Unknown error occurred", True)
+            time.sleep(1)
             return False
 
 
@@ -328,6 +340,7 @@ class BackupManager:
 
         if not is_authorized(current_user.role, 'check_for_restore_code'):
             print("You do not have permission to check for restore codes.")
+            time.sleep(1)
             return False
 
         return RestoreCodeStore().has_code_for_admin(current_user.id)
@@ -340,6 +353,7 @@ class BackupManager:
 
         if not is_authorized(current_user.role, 'revoke_restore_code'):
             print("You do not have permission to revoke restore codes.")
+            time.sleep(1)
             return
 
         # Build admin name lookup for display (from users table)
@@ -364,6 +378,7 @@ class BackupManager:
         codes = store.list_all_decrypted()
         if not codes:
             print("No restore codes found.")
+            time.sleep(1)
             return
 
         print("\n=== Active Restore Codes ===")
@@ -378,6 +393,7 @@ class BackupManager:
             choice = input("\nEnter the number of the code to revoke (or 'c' to cancel): ").strip().lower()
             if choice == 'c':
                 print("Operation cancelled.")
+                time.sleep(1)
                 return
 
             try:
@@ -401,6 +417,7 @@ class BackupManager:
                 break
             elif confirm == 'n':
                 print("Operation cancelled.")
+                time.sleep(1)
                 return
             else:
                 print("Invalid input. Please enter 'y' to confirm or 'n' to cancel.")
@@ -415,6 +432,7 @@ class BackupManager:
             f"Revoked code {codes[index]['code']} from admin ID {codes[index]['admin_id']}",
             False
         )
+        time.sleep(1)
 
 
     def super_admin_restore_backup(current_user):
@@ -439,8 +457,10 @@ class BackupManager:
 
         # Sort backups by date (newest first)
         backups.sort(key=lambda x: os.path.getmtime(os.path.join(backup_dir, x)), reverse=True)
-
-        print("\n=== Available Backups ===")
+        general_methods.clear_console()
+        print("----------------------------------------------------------------------------")
+        print("|" + "Available backups".center(75) + "|")
+        print("----------------------------------------------------------------------------")
         for i, backup in enumerate(backups, 1):
             # Fetch the date of the file
             backup_time = datetime.fromtimestamp(os.path.getmtime(os.path.join(backup_dir, backup)))
@@ -485,11 +505,13 @@ class BackupManager:
                 print("Please restart the application and log in again.")
                 sys.exit(0)
             else:
-                print("\nRestore failed.")
+                print("\n❌ Restore failed.")
+                time.sleep(1)
                 return False
         except Exception as e:
             print(f"Error restoring backup: {e}")
             log_instance.addlog(current_user.username, "Super admin restore backup failed", f"Error: {str(e)}", True)
+            time.sleep(1)
             return False
 
         
@@ -509,53 +531,121 @@ class BackupManager:
         else:
             shutil.copy2(backup_path, temp_db)
 
-        # STEP 2: Open current & backup DB
+        # STEP 2: Open current & backup DB with timeout to handle locks
         conn_current = open_connection()
+        # Set a timeout to wait for locks (30 seconds)
+        conn_current.execute("PRAGMA busy_timeout = 30000")
         conn_backup = sqlite3.connect(temp_db)
+        conn_backup.execute("PRAGMA busy_timeout = 30000")
+        cur_current = None
+        cur_backup = None
         
         try:
+            # Begin an IMMEDIATE transaction to acquire write lock early
+            conn_current.execute("BEGIN IMMEDIATE")
+            
             cur_current = conn_current.cursor()
             cur_backup = conn_backup.cursor()
 
-            # STEP 3: Copy tables except logs (and system tables)
-            tables_to_skip = {"logs"}
+            # STEP 3: Define EXPLICIT WHITELIST with SQL query mapping (SQL injection prevention)
+            # Maps table names to their actual SQL queries - no f-strings needed
+            TABLE_OPERATIONS = {
+                'users': {
+                    'delete': 'DELETE FROM users',
+                    'select': 'SELECT * FROM users',
+                    'insert': 'INSERT INTO users VALUES ({placeholders})'
+                },
+                'travellers': {
+                    'delete': 'DELETE FROM travellers',
+                    'select': 'SELECT * FROM travellers',
+                    'insert': 'INSERT INTO travellers VALUES ({placeholders})'
+                },
+                'scooters': {
+                    'delete': 'DELETE FROM scooters',
+                    'select': 'SELECT * FROM scooters',
+                    'insert': 'INSERT INTO scooters VALUES ({placeholders})'
+                }
+                # 'logs' is intentionally excluded - never restored
+                # 'restore_codes' table excluded - stored in JSON file
+            }
 
+            # Get tables from backup
             cur_backup.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables = [row[0] for row in cur_backup.fetchall()]
 
             for table in tables:
-                # Validate identifier and skip disallowed/system tables
-                if not is_safe_identifier(table) or table in tables_to_skip:
-                    continue
+                # Defense-in-depth: First validate table name format (catches obvious attacks)
+                if not is_safe_identifier(table):
+                    continue  # Skip system/malformed table names
+                
+                # Primary security: Only restore whitelisted tables (prevents SQL injection)
+                if table not in TABLE_OPERATIONS:
+                    continue  # Skip tables not in whitelist
 
-                # Use the validated identifier directly (no quoting needed)
-                qname = table
+                # Get pre-defined queries for this table (NO f-strings in SQL!)
+                queries = TABLE_OPERATIONS[table]
 
-                # wipe current table
-                cur_current.execute(f'DELETE FROM {qname}')
+                # Wipe current table
+                cur_current.execute(queries['delete'])
 
-                # restore data
-                cur_backup.execute(f'SELECT * FROM {qname}')
+                # Restore data
+                cur_backup.execute(queries['select'])
                 rows = cur_backup.fetchall()
                 if rows:
+                    # Build placeholders and insert query
                     placeholders = ", ".join("?" * len(rows[0]))
-                    cur_current.executemany(
-                        f'INSERT INTO {qname} VALUES ({placeholders})',
-                        rows
-                    )
+                    insert_query = queries['insert'].format(placeholders=placeholders)
+                    cur_current.executemany(insert_query, rows)
 
-            # STEP 4: Commit
+            # STEP 4: Commit changes
             conn_current.commit()
+            
+        except Exception as e:
+            # Rollback on error
+            try:
+                conn_current.rollback()
+            except:
+                pass
+            
+            # Log error AFTER rollback (avoids deadlock)
+            print(f"An error occurred: {e}")
+            try:
+                log_instance.addlog(
+                    current_user.username,
+                    "Restore backup failed",
+                    f"Error during restore: {str(e)}",
+                    suspicious=True
+                )
+            except Exception as log_error:
+                print(f"Failed to log error: {log_error}")
+            
+            return False
         finally:
-            # STEP 5: Close connections
-            conn_backup.close()
-            conn_current.close()
+            # STEP 5: Close cursors first, then connections (prevents "database is locked")
+            if cur_current:
+                try:
+                    cur_current.close()
+                except:
+                    pass
+            if cur_backup:
+                try:
+                    cur_backup.close()
+                except:
+                    pass
+            
+            try:
+                conn_backup.close()
+            except:
+                pass
+            try:
+                conn_current.close()
+            except:
+                pass
 
         # STEP 6: Cleanup
         os.remove(temp_db)
 
         # STEP 7: Log the restore event
-        from logs.log import log_instance
         log_instance.addlog(
             current_user.username,
             "Restore backup",
