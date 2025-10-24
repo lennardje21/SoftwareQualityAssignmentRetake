@@ -131,7 +131,7 @@ def _find_user_by_username(conn: sqlite3.Connection, username: str, key: bytes) 
     cursor.execute("SELECT id, username FROM users")
     all_users = cursor.fetchall()
     
-    # Normalize username for comparison AFTER validation passed
+    # Normalize username to lowercase before comparison (case-insensitive match)
     username_normalized = username.lower()
     
     for user_id, encrypted_username in all_users:
