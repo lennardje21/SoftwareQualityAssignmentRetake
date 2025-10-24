@@ -82,7 +82,6 @@ def user_menu(user_data: User):
         else:
             print("Invalid choice. Please try again.")
 
-
 def view_profile(user):
     general_methods.clear_console()
     print("----------------------------------------------------------------------------")
@@ -105,7 +104,9 @@ def create_new_user(current_user):
     
     print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
-        username = input("Enter username: ").strip().lower()
+        username = input("Enter username (or 'cancel' to stop): ").strip().lower()
+        if username.lower() == "cancel":
+            return
         if Validation.username_validation(username):
             if get_user_by_username(username):
                 print("Username already exists. Please try again.")
@@ -113,7 +114,7 @@ def create_new_user(current_user):
             else:
                 break
     
-    print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character.")
+    print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character (or 'cancel' to stop): ")
     password = Validation.get_valid_input(
     prompt="Enter password: ",
     validation_fn=Validation.password_validation,
@@ -130,7 +131,9 @@ def create_new_user(current_user):
     role_options = [f"{num}: {name}" for name, num in allowed_roles.items()]
     
     while True:
-        role = input(f"Enter role ({', '.join(role_options)}): ").strip().lower()
+        role = input(f"Enter role ({', '.join(role_options)}) (or 'cancel' to stop): ").strip().lower()
+        if role == "cancel":
+            return
         if role in role_lookup:
             chosen_role = role_lookup[role]
             print(f"Selected role: {chosen_role}")
@@ -138,13 +141,15 @@ def create_new_user(current_user):
         else:
             print("Invalid role. Please try again.")
     
-    print("First and last names should only contain letters, hyphens, or spaces.")    
+    print("First and last names should only contain letters, hyphens, or spaces (or 'cancel' to stop):")    
     firstname = Validation.get_valid_input(
         prompt="Enter first name: ",
         validation_fn=Validation.name_validation,
         username=current_user.username,
         field_name="first name"
         )
+    if firstname is None:
+        return
 
     lastname = Validation.get_valid_input(
         prompt="Enter last name: ",
@@ -153,6 +158,9 @@ def create_new_user(current_user):
         field_name="last name"
         )
 
+    if lastname is None:
+        return
+    
     try:
         create_user(username.lower(), firstname, lastname, password, chosen_role)
         log_instance.addlog(current_user.username, f"User creation", f"Account with username {username} created", False)
