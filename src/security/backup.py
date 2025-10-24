@@ -624,7 +624,7 @@ class BackupManager:
         # STEP 6: Cleanup
         os.remove(temp_db)
 
-        # STEP 6: Log the restore event
+        # STEP 7: Log the restore event
         from logs.log import log_instance
         log_instance.addlog(
             current_user.username,
