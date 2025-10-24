@@ -199,7 +199,7 @@ def _handle_temporary_password(user: User) -> User | None:
     if success:
         clear_temporary_passwords(user.id)
         time.sleep(2)
-        return login()  # Recursive call - could be improved
+        return None  # Return to main login loop - no recursion
     else:
         print("Password change failed. Please contact your administrator.")
         time.sleep(2)
