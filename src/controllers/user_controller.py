@@ -19,10 +19,6 @@ def user_menu(user_data: User):
         print("|" + f"User Menu".center(75) + "|")
         print("----------------------------------------------------------------------------")
         number = 1
-        
-        print(f"[{number}] View profile")
-        view_profile_option = str(number)
-        number += 1
 
         if is_authorized(user_data.role, "add_new_user"):
             print(f"[{number}] Create new user")
@@ -64,10 +60,7 @@ def user_menu(user_data: User):
 
         choice = input("Choose an option: ").strip()
 
-        if choice == view_profile_option:
-            view_profile(user_data)
-
-        elif choice == create_user_option:
+        if choice == create_user_option:
             create_new_user(user_data)
 
         elif choice == list_users_option:
@@ -83,12 +76,10 @@ def user_menu(user_data: User):
             reset_user_password(user_data)
 
         elif choice == exit_option:
-            print("Exiting the system. Goodbye!")
             return
 
         else:
             print("Invalid choice. Please try again.")
-
 
 def view_profile(user):
     general_methods.clear_console()
@@ -112,7 +103,9 @@ def create_new_user(current_user):
     
     print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
-        username = input("Enter username: ").strip().lower()
+        username = input("Enter username (or 'cancel' to stop): ").strip().lower()
+        if username == "cancel":
+            return
         if Validation.username_validation(username):
             if get_user_by_username(username):
                 print("Username already exists. Please try again.")
@@ -120,14 +113,15 @@ def create_new_user(current_user):
             else:
                 break
     
-    print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character.")
+    print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character (or 'cancel' to stop): ")
     password = Validation.get_valid_input(
     prompt="Enter password: ",
     validation_fn=Validation.password_validation,
     username=current_user.username,
     field_name="password"
     )
-
+    if password is None:
+        return
     allowed_roles = get_permitted_roles(current_user.role)
     # Build a mapping from both names and numbers → role names
     role_lookup = {str(v): k for k, v in allowed_roles.items()}
@@ -136,7 +130,9 @@ def create_new_user(current_user):
     role_options = [f"{num}: {name}" for name, num in allowed_roles.items()]
     
     while True:
-        role = input(f"Enter role ({', '.join(role_options)}): ").strip().lower()
+        role = input(f"Enter role ({', '.join(role_options)}) (or 'cancel' to stop): ").strip().lower()
+        if role == "cancel":
+            return
         if role in role_lookup:
             chosen_role = role_lookup[role]
             print(f"Selected role: {chosen_role}")
@@ -144,13 +140,15 @@ def create_new_user(current_user):
         else:
             print("Invalid role. Please try again.")
     
-    print("First and last names should only contain letters, hyphens, spaces or apostrophes.")    
+    print("First and last names should only contain letters, hyphens, apostrophes, or spaces (or 'cancel' to stop):")    
     firstname = Validation.get_valid_input(
         prompt="Enter first name: ",
         validation_fn=Validation.name_validation,
         username=current_user.username,
         field_name="first name"
         )
+    if firstname is None:
+        return
 
     lastname = Validation.get_valid_input(
         prompt="Enter last name: ",
@@ -159,6 +157,9 @@ def create_new_user(current_user):
         field_name="last name"
         )
 
+    if lastname is None:
+        return
+    
     try:
         create_user(username.lower(), firstname, lastname, password, chosen_role)
         log_instance.addlog(current_user.username, f"User creation", f"Account with username {username} created", False)
@@ -179,7 +180,12 @@ def show_all_users(current_user):
     users = list_users()
     if users:
         for user in users:
-            print(f"Username: {user.username} | Firstname: {user.firstname} | Lastname: {user.lastname} | Role: {user.role} | Created on: {user.registration_date}")
+            print(f"ID: {user.id}")
+            print(f"Username: {user.username}")
+            print(f"Firstname: {user.firstname}")
+            print(f"Lastname: {user.lastname}")
+            print(f"Role: {user.role}")
+            print("----------------------------------------------------------------------------")
     else:
         print("No users found.")
     
@@ -314,8 +320,7 @@ def update_user_account(current_user):
         return
 
     for user in editable_users:
-        print(f"ID: {user.id} | Username: {user.username} | Firstname: {user.firstname} | "
-              f"Lastname: {user.lastname} | Role: {user.role}")
+        print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
     # --- USER SELECTION LOOP ---
     while True:
@@ -336,19 +341,19 @@ def update_user_account(current_user):
             print("Invalid selection. Please try again.")
             continue
         break
+    general_methods.clear_console()
 
     # --- FIELD SELECTION LOOP ---
     while True:
         print("\nWhich field do you want to update?")
-        print("1. Username")
-        print("2. First Name")
-        print("3. Last Name")
-        print("0. Cancel")
+        print("[1] Username")
+        print("[2] First Name")
+        print("[3] Last Name")
+        print("[0] Cancel")
 
         choice = input("Choose an option: ").strip()
 
         update_data = {}
-
         if choice == '1':
             # Username update behavior same as CREATE
             print("Username requirements: 8-10 characters, letters and numbers only.")
