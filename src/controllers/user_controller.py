@@ -76,7 +76,6 @@ def user_menu(user_data: User):
             reset_user_password(user_data)
 
         elif choice == exit_option:
-            print("Exiting the system. Goodbye!")
             return
 
         else:
@@ -321,12 +320,7 @@ def update_user_account(current_user):
         return
 
     for user in editable_users:
-        print(f"ID: {user.id}")
-        print(f"Username: {user.username}")
-        print(f"Firstname: {user.firstname}")
-        print(f"Lastname: {user.lastname}")
-        print(f"Role: {user.role}")
-        print("----------------------------------------------------------------------------")
+        print(f"ID: {user.id} | Username: {user.username} | Role: {user.role}")
 
     # --- USER SELECTION LOOP ---
     while True:
@@ -347,19 +341,19 @@ def update_user_account(current_user):
             print("Invalid selection. Please try again.")
             continue
         break
+    general_methods.clear_console()
 
     # --- FIELD SELECTION LOOP ---
     while True:
         print("\nWhich field do you want to update?")
-        print("1. Username")
-        print("2. First Name")
-        print("3. Last Name")
-        print("0. Cancel")
+        print("[1] Username")
+        print("[2] First Name")
+        print("[3] Last Name")
+        print("[0] Cancel")
 
         choice = input("Choose an option: ").strip()
 
         update_data = {}
-
         if choice == '1':
             # Username update behavior same as CREATE
             print("Username requirements: 8-10 characters, letters and numbers only.")
