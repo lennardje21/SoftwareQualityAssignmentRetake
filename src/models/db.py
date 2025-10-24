@@ -104,7 +104,7 @@ def initialize_database():
                 decrypted = decrypt_message(temp_pass, key)
                 # If decryption succeeds, it's already encrypted - skip it
                 continue
-            except:
+            except Exception:
                 # Decryption failed - this is a plain integer value that needs encryption
                 # Convert to string and encrypt
                 if temp_pass in (0, 1, '0', '1'):
