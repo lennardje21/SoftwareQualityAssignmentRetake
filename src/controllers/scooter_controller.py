@@ -363,7 +363,7 @@ def update_scooter_controller(current_user):
     print(f"[7] SOC Range (MIN/MAX): {scooter.soc_range_min} - {scooter.soc_range_max}%")
     print(f"[8] Location: Latitude {scooter.location_latitude}, Longitude {scooter.location_longitude}")
     print(f"[9] Out of Service (yes/no): {'Yes' if scooter.out_of_service else 'No'}")
-    print(f"[10] Mileage: {scooter.mileage}")
+    print(f"[10] Mileage: {scooter.mileage} km")
     print(f"[11] Last Maintenance Date: {scooter.last_maintenance_date}")
     print("[0] Cancel")
 
