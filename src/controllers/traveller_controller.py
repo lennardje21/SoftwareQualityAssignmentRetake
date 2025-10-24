@@ -435,8 +435,13 @@ def delete_traveller_controller(current_user):
         break
 
     # --- CONFIRM DELETION ---
-    confirm = input("Are you sure you want to delete this traveller? (yes/no): ")
-    if confirm != "yes":  # Whitelist: only exact "yes" proceeds
+    confirm = Validation.get_valid_input(
+        "Are you sure you want to delete this traveller? (yes/no): ",
+        Validation.yes_no_validation,
+        current_user.username,
+        "confirmation"
+    )
+    if confirm == "no":  # Whitelist: only exact "yes" proceeds
         print("Deletion cancelled.")
         time.sleep(1)
         return
