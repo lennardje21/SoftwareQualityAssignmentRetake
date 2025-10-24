@@ -35,7 +35,7 @@ def initialize_database():
             password TEXT NOT NULL,
             role TEXT NOT NULL,
             registration_date TEXT NOT NULL,
-            temporary_password BOOLEAN NOT NULL DEFAULT 0
+            temporary_password TEXT NOT NULL
         )
     ''')
 
@@ -86,6 +86,38 @@ def initialize_database():
     except sqlite3.OperationalError:
         # Column already exists, ignore the error
         pass
+    
+    # Migrate existing temporary_password values from integer (0/1) to encrypted text
+    try:
+        from security.encryption import encrypt_message, decrypt_message, load_symmetric_key
+        key = load_symmetric_key()
+        
+        # Check if there are any non-encrypted values (integers 0 or 1)
+        cursor.execute("SELECT id, temporary_password FROM users")
+        rows = cursor.fetchall()
+        
+        migrated_count = 0
+        for user_id, temp_pass in rows:
+            # Try to decrypt - if it fails, it's not encrypted yet
+            try:
+                # Attempt to decrypt the value
+                decrypted = decrypt_message(temp_pass, key)
+                # If decryption succeeds, it's already encrypted - skip it
+                continue
+            except Exception:
+                # Decryption failed - this is a plain integer value that needs encryption
+                # Convert to string and encrypt
+                if temp_pass in (0, 1, '0', '1'):
+                    encrypted_value = encrypt_message(str(temp_pass), key)
+                    cursor.execute("UPDATE users SET temporary_password = ? WHERE id = ?", (encrypted_value, user_id))
+                    migrated_count += 1
+        
+        if migrated_count > 0:
+            conn.commit()
+            print(f"Migrated {migrated_count} temporary_password value(s) to encrypted format")
+    except Exception as e:
+        # If migration fails, continue
+        print(f"Temporary password migration skipped or failed: {e}")
     
     # Table: logs
     cursor.execute('''

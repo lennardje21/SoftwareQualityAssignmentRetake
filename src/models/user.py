@@ -30,11 +30,12 @@ def create_user(username, firstname, lastname,  password, role):
             hashed_password = hash_password(password)
             date_time_now1 = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Format the date as needed
             date_time_now = encrypt_message(date_time_now1, key)  # Example date, replace with actual date logic
+            encrypted_temp_password = encrypt_message("0", key)  # Default: not temporary
 
             cursor.execute('''
-                INSERT INTO users (username, firstname, lastname, password, role, registration_date)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (encrypted_username, encrypted_firstname, encrypted_lastname, hashed_password, encrypted_role, date_time_now))
+                INSERT INTO users (username, firstname, lastname, password, role, registration_date, temporary_password)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (encrypted_username, encrypted_firstname, encrypted_lastname, hashed_password, encrypted_role, date_time_now, encrypted_temp_password))
 
             conn.commit()
             return True
@@ -160,8 +161,10 @@ def clear_temporary_passwords(user_id):
     """Clear the temporary password flag for a user with id."""
     conn = open_connection()
     cursor = conn.cursor()
+    key = load_symmetric_key()
     try:
-        cursor.execute('UPDATE users SET temporary_password = 0 WHERE id = ?', (user_id,))
+        encrypted_false = encrypt_message("0", key)
+        cursor.execute('UPDATE users SET temporary_password = ? WHERE id = ?', (encrypted_false, user_id))
         conn.commit()
     finally:
         close_connection(conn)
@@ -237,15 +240,17 @@ def update_password_by_id(user_id, new_password):
     """Update the password for a user by ID."""
     conn = open_connection()
     cursor = conn.cursor()
+    key = load_symmetric_key()
     
     try:
         hashed_password = hash_password(new_password)  # Hash the new password
+        encrypted_true = encrypt_message("1", key)
         
         cursor.execute('''
             UPDATE users
-            SET password = ?, temporary_password = 1
+            SET password = ?, temporary_password = ?
             WHERE id = ?
-        ''', (hashed_password, user_id))
+        ''', (hashed_password, encrypted_true, user_id))
         
         conn.commit()
         return cursor.rowcount > 0  # Return True if the update was successful
