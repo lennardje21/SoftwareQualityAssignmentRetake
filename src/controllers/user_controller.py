@@ -110,7 +110,6 @@ def create_new_user(current_user):
         )
         if username is None:
             return
-        username = username.lower()
         if get_user_by_username(username):
             print("Username already exists. Please try again.")
             log_instance.log_invalid_input(current_user.username, "username", "Attempt to create duplicate username", False)
