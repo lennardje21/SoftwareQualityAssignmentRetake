@@ -490,3 +490,17 @@ class Validation:
         print(f"Invalid yes/no choice: {choice}. Must be 'yes' or 'no'.")
         log_instance.log_invalid_input(username, "yes/no choice", "Invalid value")
         return False
+
+    @staticmethod
+    def restore_code_validation(code: str, username: str) -> bool:
+        """Validate a one-use restore code: 8 alphanumeric characters."""
+        # Null byte check
+        if Validation.contains_null_byte(code):
+            print("Invalid restore code: contains forbidden characters.")
+            log_instance.log_invalid_input(username, "restore code", "Null byte detected", suspicious=True)
+            return False
+        if re.fullmatch(r"[A-Za-z0-9]{8}", code):
+            return True
+        print(f"Invalid restore code: {code}. Code must be exactly 8 letters/digits.")
+        log_instance.log_invalid_input(username, "restore code", "Invalid format")
+        return False

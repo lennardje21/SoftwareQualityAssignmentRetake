@@ -2,6 +2,7 @@ from datetime import datetime
 import sqlite3
 import os
 from security.encryption import load_symmetric_key, encrypt_message, decrypt_message
+from security.validation import Validation
 from helpers.general_methods import general_methods
 
 
@@ -116,10 +117,15 @@ class LogFunction():
 
     def show_suspicious_logs(self, current_user):
 
-        # Ask if the user wants to view the logs
-        view_logs = input("There are unread suspicious logs that require your attention. Would you like to view them now? (y/n): ").strip().lower()
-        
-        if view_logs != 'y' and view_logs != 'yes':
+        # Ask if the user wants to view the logs (validated yes/no)
+        view_choice = Validation.get_valid_input(
+            "There are unread suspicious logs that require your attention. View them now? (yes/no): ",
+            Validation.yes_no_validation,
+            current_user.username,
+            "view suspicious logs"
+        )
+
+        if view_choice is None or view_choice.lower() != 'yes':
             print("You can review the suspicious logs later.")
             return
 
@@ -164,9 +170,14 @@ class LogFunction():
 
             print("-" * 100)
             
-            mark_as_read = input("Do you want to mark these logs as read? (y/n): ").strip().lower()
-        
-            if mark_as_read == 'y' or mark_as_read == 'yes':
+            mark_choice = Validation.get_valid_input(
+                "Do you want to mark these logs as read? (yes/no): ",
+                Validation.yes_no_validation,
+                current_user.username,
+                "mark logs as read"
+            )
+
+            if mark_choice is not None and mark_choice.lower() == 'yes':
                 # Mark the logs as read
                 log_ids = [row[0] for row in unread_suspicious_logs]
 
