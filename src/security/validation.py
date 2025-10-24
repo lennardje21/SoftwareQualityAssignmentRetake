@@ -30,7 +30,7 @@ class Validation:
             if validation_fn(min_val, max_val, username):
                 return min_val, max_val
 
-            print("Invalid range. Please try again or type 'cancel'.")
+            print(f"Invalid range: {min_val}-{max_val}. Please try again or type 'cancel'.")
 
 
     @staticmethod
