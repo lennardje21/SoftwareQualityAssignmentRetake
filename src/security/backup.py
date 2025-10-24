@@ -317,7 +317,7 @@ class BackupManager:
             print("Please restart the application and log in again.")
             sys.exit(0)
         else:
-            print("\n❌ Restore failed.")
+            print("\nRestore failed.")
             return False
 
 
@@ -485,7 +485,7 @@ class BackupManager:
                 print("Please restart the application and log in again.")
                 sys.exit(0)
             else:
-                print("\n❌ Restore failed.")
+                print("\nRestore failed.")
                 return False
         except Exception as e:
             print(f"Error restoring backup: {e}")
@@ -502,7 +502,7 @@ class BackupManager:
         base_dir, db_path, backup_dir = BackupManager.get_paths()
         temp_db = os.path.join(base_dir, 'data', 'temp_restore.db')
 
-        # STEP 1: Extract backup → temp DB
+        # STEP 1: Extract backup -> temp DB
         if backup_path.endswith('.zip'):
             if not BackupManager.extract_db_from_zip(backup_path, temp_db, current_user):
                 return False
