@@ -35,7 +35,7 @@ def initialize_database():
             password TEXT NOT NULL,
             role TEXT NOT NULL,
             registration_date TEXT NOT NULL,
-            temporary_password TEXT NOT NULL DEFAULT '0'
+            temporary_password TEXT NOT NULL
         )
     ''')
 
