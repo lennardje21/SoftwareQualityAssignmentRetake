@@ -7,7 +7,6 @@ def main():
 
     initialize_database()
     while True:
-        # print("--- DEBUG: User login attempt --")
         user = login()
         if not user:
             continue  # login failed, opnieuw proberen

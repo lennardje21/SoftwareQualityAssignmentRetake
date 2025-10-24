@@ -5,25 +5,50 @@ from datetime import datetime
 class Validation:
 
     @staticmethod
+    def contains_null_byte(value: str) -> bool:
+        """Check if input contains null bytes (security check)."""
+        return '\x00' in value or '\0' in value
+
+    @staticmethod
     def get_valid_input(prompt, validation_fn, username, field_name):
         while True:
             value = input(prompt).strip()
+            
+            # Check for null bytes first (security critical)
+            if Validation.contains_null_byte(value):
+                print(f"Invalid input: contains forbidden characters.")
+                log_instance.log_invalid_input(username, field_name, "Null byte detected", suspicious=True)
+                continue
+            
             if value == "cancel":
                 print("Operation cancelled by user.")
                 return None
             if validation_fn(value, username):
                 return value
-            # print(f"Invalid {field_name}: {value}. Please try again.")
             log_instance.log_invalid_input(username, field_name, f"Invalid {field_name} input")
 
     @staticmethod
     def get_valid_range_input(prompt_min, prompt_max, validation_fn, username, field_name):
         while True:
             min_val = input(prompt_min).strip()
+            
+            # Check for null bytes
+            if Validation.contains_null_byte(min_val):
+                print(f"Invalid input: contains forbidden characters.")
+                log_instance.log_invalid_input(username, field_name, "Null byte detected in min value", suspicious=True)
+                continue
+            
             if min_val.lower() == "cancel":
                 return None, None
 
             max_val = input(prompt_max).strip()
+            
+            # Check for null bytes
+            if Validation.contains_null_byte(max_val):
+                print(f"Invalid input: contains forbidden characters.")
+                log_instance.log_invalid_input(username, field_name, "Null byte detected in max value", suspicious=True)
+                continue
+            
             if max_val.lower() == "cancel":
                 return None, None
 
@@ -45,10 +70,24 @@ class Validation:
     def get_valid_coordinates(prompt_lat, prompt_lon, validation_fn, username):
         while True:
             lat = input(prompt_lat).strip()
+            
+            # Check for null bytes
+            if Validation.contains_null_byte(lat):
+                print(f"Invalid input: contains forbidden characters.")
+                log_instance.log_invalid_input(username, "latitude", "Null byte detected", suspicious=True)
+                continue
+            
             if lat.lower() == "cancel":
                 return None, None
 
             lon = input(prompt_lon).strip()
+            
+            # Check for null bytes
+            if Validation.contains_null_byte(lon):
+                print(f"Invalid input: contains forbidden characters.")
+                log_instance.log_invalid_input(username, "longitude", "Null byte detected", suspicious=True)
+                continue
+            
             if lon.lower() == "cancel":
                 return None, None
 
@@ -192,6 +231,12 @@ class Validation:
         
         while True:
             city_choice = input("Enter number: ").strip()
+            
+            # Check for null bytes
+            if Validation.contains_null_byte(city_choice):
+                print(f"Invalid input: contains forbidden characters.")
+                log_instance.log_invalid_input(username, "city selection", "Null byte detected", suspicious=True)
+                continue
             
             if city_choice.lower() == "cancel":
                 return None
