@@ -510,6 +510,6 @@ class Validation:
             return False
         if re.fullmatch(r"[A-Za-z0-9]{8}", code):
             return True
-        print(f"Invalid restore code: {code}. Code must be exactly 8 letters/digits.")
+        print(f"Invalid restore code: {code}.")
         Validation._get_log_instance().log_invalid_input(username, "restore code", "Invalid format")
         return False

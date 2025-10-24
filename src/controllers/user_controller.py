@@ -102,16 +102,19 @@ def create_new_user(current_user):
     
     print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
-        # Normalize username to lowercase BEFORE validation (case-insensitive per spec)
-        username = input("Enter username (or 'cancel' to stop): ").strip().lower()
-        if username == "cancel":
+        username = Validation.get_valid_input(
+            prompt="Enter username (or 'cancel' to stop): ",
+            validation_fn=lambda val, un: Validation.username_validation(val.lower()),
+            username=current_user.username,
+            field_name="username"
+        )
+        if username is None:
             return
-        if Validation.username_validation(username):
-            if get_user_by_username(username):
-                print("Username already exists. Please try again.")
-                log_instance.log_invalid_input(current_user.username, "username", "Attempt to create duplicate username", False)
-            else:
-                break
+        if get_user_by_username(username):
+            print("Username already exists. Please try again.")
+            log_instance.log_invalid_input(current_user.username, "username", "Attempt to create duplicate username", False)
+            continue
+        break
     
     print("Password requirements: At least 12 characters, including uppercase, lowercase, number, and special character (or 'cancel' to stop): ")
     password = Validation.get_valid_input(
@@ -266,14 +269,16 @@ def delete_user_account(current_user):
         break  # valid target user selected
 
     # --- CONFIRMATION STEP ---
-    while True:
-        confirmation = input(f"Are you sure you want to delete '{target_user.username}'? (yes/no/cancel): ")
-        if confirmation in {"no", "cancel"}:  # Whitelist check
-            print("Deletion cancelled.")
-            return
-        if confirmation == "yes":
-            break
-        print("Invalid choice. Please type 'yes', 'no', or 'cancel'.")
+    confirmation = Validation.get_valid_input(
+        prompt=f"Are you sure you want to delete '{target_user.username}'? (yes/no, or 'cancel'): ",
+        validation_fn=Validation.yes_no_validation,
+        username=current_user.username,
+        field_name="confirmation"
+    )
+    if confirmation is None or confirmation.lower() == "no":
+        print("Deletion cancelled.")
+        general_methods.hidden_input("\nPress Enter to return...")
+        return
 
     # --- PERFORM DELETE ---
     success = delete_user_by_id(target_id)
@@ -440,9 +445,14 @@ def change_own_password(current_user) -> bool:
         print("User not found.")
         return False
 
-    # Eerst: 3 pogingen voor huidig wachtwoord
+    # 3 attempts for current password
     for attempt in range(3):
         old_password = input("Enter your current password: ").strip()
+        # Security: reject null bytes in current password input
+        if Validation.contains_null_byte(old_password):
+            print("Invalid current password input.")
+            log_instance.log_invalid_input(current_user.username, "password", "Null byte detected in current password", suspicious=True)
+            continue
         if validate_password(old_password, stored_hash):
             break  # correct -> ga door
         else:
@@ -494,15 +504,15 @@ def reset_user_password(current_user):
 
     # ----- ID INPUT LOOP -----
     while True:
-        user_input = input("\nEnter the ID of the user (or type 'cancel' to stop): ").strip()
-
-        if user_input.lower() == "cancel":
+        user_input = Validation.get_valid_input(
+            "\nEnter the ID of the user (or type 'cancel' to stop): ",
+            Validation.get_valid_id_input,
+            current_user.username,
+            "user id"
+        )
+        if user_input is None:
             print("Password reset cancelled.")
             return
-
-        # Use existing ID validator (shared logic)
-        if not Validation.get_valid_id_input(user_input, current_user.username):
-            continue  # validation prints its own message, just re-prompt
 
         target_id = int(user_input)
         target_user = next((u for u in editable_users if u.id == target_id), None)
