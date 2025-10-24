@@ -55,11 +55,19 @@ class Validation:
 
     @staticmethod
     def name_validation(name, username):
-        if re.fullmatch(r"[A-Za-z]{2,30}", name):
-            return True
-        print(f"Invalid name: {name}. Name must only contain letters (2–30 characters).")
-        log_instance.log_invalid_input(username, "name", "Invalid format")
-        return False
+        # Must start and end with a letter, can contain letters, spaces, hyphens, apostrophes in between
+        # No consecutive special characters, 2-30 characters total
+        if len(name) < 2 or len(name) > 30:
+            print(f"Invalid name: {name}. Name must be 2-30 characters.")
+            log_instance.log_invalid_input(username, "name", "Invalid length")
+            return False
+        
+        if not re.fullmatch(r"^[A-Za-z]((?![\s\-']{2})[A-Za-z\s\-'])*[A-Za-z]$|^[A-Za-z]{2}$", name):
+            print(f"Invalid name: {name}. Name must be 2-30 characters, start and end with a letter, contain only letters, spaces, hyphens, and apostrophes, and not have consecutive special characters (spaces, hyphens, apostrophes).")
+            log_instance.log_invalid_input(username, "name", "Invalid format")
+            return False
+        
+        return True
 
     @staticmethod
     def username_validation(username):
@@ -225,17 +233,22 @@ class Validation:
 
     @staticmethod
     def location_validation(latitude, longitude, username):
-        if re.fullmatch(r"\d{2}\.\d{5}", latitude) and re.fullmatch(r"\d\.\d{5}", longitude):
+        # allow decimals of any length, must be convertible to float
+        if re.fullmatch(r"\d{2}\.\d+", latitude) and re.fullmatch(r"\d\.\d+", longitude):
             try:
                 lat_val = float(latitude)
                 lng_val = float(longitude)
+                # Rotterdam bounds
                 if 51.85000 <= lat_val <= 52.05000 and 4.40000 <= lng_val <= 4.55000:
                     return True
             except ValueError:
                 pass
-        print(f"Invalid coordinates: lat={latitude}, lng={longitude}. Must be lat: 51.85000-52.05000, lng: 4.40000-4.55000, exactly 5 decimal places.")
+
+        print(f"Invalid coordinates: lat={latitude}, lng={longitude}. "
+            f"Must be within lat 51.85000–52.05000 and lng 4.40000–4.55000, and use decimal format.")
         log_instance.log_invalid_input(username, "location", "Invalid coordinates")
         return False
+
 
     @staticmethod
     def mileage_validation(mileage, username):
