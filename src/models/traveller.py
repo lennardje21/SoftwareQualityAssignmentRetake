@@ -344,13 +344,24 @@ def update_traveller(customer_id, fields: dict):
     cursor = conn.cursor()
     key = load_symmetric_key()
 
-    # Whitelist of allowed field names to prevent SQL injection
-    ALLOWED_FIELDS = {'first_name', 'last_name', 'date_of_birth', 'gender', 'street', 
-                      'house_number', 'zip_code', 'city', 'email', 'phone_number', 'license_number'}
+    # Explicit mapping of allowed field names to actual column names to prevent SQL injection
+    FIELD_COLUMN_MAPPING = {
+        'first_name': 'first_name',
+        'last_name': 'last_name',
+        'date_of_birth': 'date_of_birth',
+        'gender': 'gender',
+        'street': 'street',
+        'house_number': 'house_number',
+        'zip_code': 'zip_code',
+        'city': 'city',
+        'email': 'email',
+        'phone_number': 'phone_number',
+        'license_number': 'license_number'
+    }
 
     try:
-        # Validate all field names against whitelist
-        if not all(field_name in ALLOWED_FIELDS for field_name in fields.keys()):
+        # Validate all field names against the predefined mapping
+        if not all(field_name in FIELD_COLUMN_MAPPING for field_name in fields.keys()):
             print("Invalid field name detected.")
             return False
 
@@ -362,13 +373,13 @@ def update_traveller(customer_id, fields: dict):
             else:
                 encrypted_fields[field_name] = field_value
 
-        # Build the query using explicit placeholders - no f-strings
-        # Create a list of "field_name = ?" for each field
+        # Build the query using only predefined column names from the mapping
         updates = []
         values = []
         
         for field_name in fields.keys():
-            updates.append(field_name + " = ?")
+            column_name = FIELD_COLUMN_MAPPING[field_name]  # Get the actual column name from mapping
+            updates.append(column_name + " = ?")  # Use the mapped column name
             values.append(encrypted_fields[field_name])
         
         values.append(customer_id)
