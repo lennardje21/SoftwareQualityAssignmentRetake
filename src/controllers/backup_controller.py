@@ -1,15 +1,8 @@
-# controllers/backup_controller.py
-
-import os
 import time
-import sys
 from security.backup import BackupManager
 from security.restore_codes_store import RestoreCodeStore
-from controllers.rolecheck import is_authorized, require_authorization
-from logs.log import log_instance
+from controllers.rolecheck import require_authorization
 from helpers.general_methods import general_methods
-from security.validation import Validation
-from security.encryption import load_symmetric_key, decrypt_message
 
 def backup_management_menu(user_data):
     """Entry menu for backup management. Role determines which options are shown."""
@@ -26,7 +19,7 @@ def backup_management_menu(user_data):
             print("[0] Back")
             print("----------------------------------------------------------------------------")
             choice = input("Choose an option: ").strip()
-
+            general_methods.clear_console()
             if choice == '1':
                 BackupManager.create_backup(user_data)
             elif choice == '2':
