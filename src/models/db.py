@@ -35,7 +35,7 @@ def initialize_database():
             password TEXT NOT NULL,
             role TEXT NOT NULL,
             registration_date TEXT NOT NULL,
-            temporary_password BOOLEAN NOT NULL DEFAULT 0
+            temporary_password TEXT NOT NULL DEFAULT '0'
         )
     ''')
 
@@ -85,6 +85,28 @@ def initialize_database():
         print("Added in_service_date column to existing scooters table")
     except sqlite3.OperationalError:
         # Column already exists, ignore the error
+        pass
+    
+    # Migrate existing temporary_password values from integer (0/1) to encrypted text
+    try:
+        from security.encryption import encrypt_message, load_symmetric_key
+        key = load_symmetric_key()
+        
+        # Check if there are any non-encrypted values (integers 0 or 1)
+        cursor.execute("SELECT id, temporary_password FROM users")
+        rows = cursor.fetchall()
+        
+        for user_id, temp_pass in rows:
+            # If the value is a plain integer (0 or 1), encrypt it
+            if temp_pass in (0, 1, '0', '1'):
+                encrypted_value = encrypt_message(str(temp_pass), key)
+                cursor.execute("UPDATE users SET temporary_password = ? WHERE id = ?", (encrypted_value, user_id))
+        
+        conn.commit()
+        print("Migrated temporary_password values to encrypted format")
+    except Exception as e:
+        # If migration fails (e.g., already encrypted), continue
+        print(f"Temporary password migration skipped or failed: {e}")
         pass
     
     # Table: logs

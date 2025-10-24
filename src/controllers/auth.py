@@ -169,6 +169,7 @@ def _create_authenticated_user(username: str, user_id: int, user_data: dict, key
     reg_date = decrypt_message(user_data['registration_date'], key)
     first_name = decrypt_message(user_data['firstname'], key)
     last_name = decrypt_message(user_data['lastname'], key)
+    temp_password_str = decrypt_message(user_data['temporary_password'], key)
     
     user = User(
         id=user_id,
@@ -179,8 +180,8 @@ def _create_authenticated_user(username: str, user_id: int, user_data: dict, key
         registration_date=reg_date
     )
     
-    # Handle temporary password
-    if user_data['temporary_password'] == 1:
+    # Check if temporary password (decrypt to "1" means True)
+    if temp_password_str == "1":
         return _handle_temporary_password(user)
     
     # Regular successful login
