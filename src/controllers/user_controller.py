@@ -104,7 +104,7 @@ def create_new_user(current_user):
     print("Username requirements: 8-10 characters, letters and numbers only.")
     while True:
         username = input("Enter username (or 'cancel' to stop): ").strip().lower()
-        if username.lower() == "cancel":
+        if username == "cancel":
             return
         if Validation.username_validation(username):
             if get_user_by_username(username):
