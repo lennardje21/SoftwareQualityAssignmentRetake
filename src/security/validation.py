@@ -164,6 +164,12 @@ class Validation:
         return False
 
     @staticmethod
+    def get_valid_cities():
+        """Return the list of valid cities in a consistent order."""
+        return ['Amsterdam', 'Rotterdam', 'Utrecht', 'Groningen', 'Maastricht', 
+                'Den Haag', 'Eindhoven', 'Tilburg', 'Breda', 'Arnhem']
+
+    @staticmethod
     def city_validation(city, username):
         valid_cities = {'Amsterdam', 'Rotterdam', 'Utrecht', 'Groningen', 'Maastricht', 'Den Haag', 'Eindhoven', 'Tilburg', 'Breda', 'Arnhem'}
         if city in valid_cities:
@@ -171,6 +177,33 @@ class Validation:
         print(f"Invalid city: {city}. Choose from: {', '.join(valid_cities)}")
         log_instance.log_invalid_input(username, "city", "Not in predefined list")
         return False
+    
+    @staticmethod
+    def get_city_by_selection(username):
+        """
+        Display city options and get user selection.
+        Returns the selected city name or None if cancelled.
+        """
+        valid_cities = Validation.get_valid_cities()
+        
+        print("\nSelect a city (or type 'cancel' to stop):")
+        for idx, c in enumerate(valid_cities, start=1):
+            print(f"{idx}. {c}")
+        
+        while True:
+            city_choice = input("Enter number: ").strip()
+            
+            if city_choice.lower() == "cancel":
+                return None
+            
+            if city_choice.isdigit() and 1 <= int(city_choice) <= len(valid_cities):
+                selected_city = valid_cities[int(city_choice) - 1]
+                # Validate the selected city (should always pass, but for consistency)
+                if Validation.city_validation(selected_city, username):
+                    return selected_city
+            
+            print("Invalid selection. Please enter a valid number or 'cancel'.")
+            log_instance.log_invalid_input(username, "city selection", f"Invalid choice: {city_choice}")
 
     @staticmethod
     def license_validation(license_number, username):
@@ -247,8 +280,8 @@ class Validation:
 
     @staticmethod
     def location_validation(latitude, longitude, username):
-        # allow decimals of any length, must be convertible to float
-        if re.fullmatch(r"\d{2}\.\d+", latitude) and re.fullmatch(r"\d\.\d+", longitude):
+        # Enforce exactly 5 decimal places as per Rotterdam coordinate spec
+        if re.fullmatch(r"\d{2}\.\d{5}", latitude) and re.fullmatch(r"\d\.\d{5}", longitude):
             try:
                 lat_val = float(latitude)
                 lng_val = float(longitude)
@@ -259,7 +292,7 @@ class Validation:
                 pass
 
         print(f"Invalid coordinates: lat={latitude}, lng={longitude}. "
-            f"Must be within lat 51.85000–52.05000 and lng 4.40000–4.55000, and use decimal format.")
+            f"Must be within lat 51.85000–52.05000 and lng 4.40000–4.55000, with exactly 5 decimal places.")
         log_instance.log_invalid_input(username, "location", "Invalid coordinates")
         return False
 
