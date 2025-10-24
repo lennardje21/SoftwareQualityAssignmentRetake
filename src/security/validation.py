@@ -55,7 +55,7 @@ class Validation:
             if validation_fn(lat, lon, username):
                 return lat, lon
 
-            print("Invalid coordinates. Please try again or type 'cancel'.")
+            print(f"Invalid coordinates: {lat}, {lon}. Please try again or type 'cancel'.")
 
 
     @staticmethod
