@@ -640,22 +640,22 @@ class BackupManager:
             if cur_current:
                 try:
                     cur_current.close()
-                except Exception:
-                    pass
+                except Exception as cleanup_error:
+                    print(f"Failed to close cur_current: {cleanup_error}")
             if cur_backup:
                 try:
                     cur_backup.close()
-                except Exception:
-                    pass
+                except Exception as cleanup_error:
+                    print(f"Failed to close cur_backup: {cleanup_error}")
             
             try:
                 conn_backup.close()
-            except Exception:
-                pass
+            except Exception as cleanup_error:
+                print(f"Failed to close conn_backup: {cleanup_error}")
             try:
                 conn_current.close()
-            except Exception:
-                pass
+            except Exception as cleanup_error:
+                print(f"Failed to close conn_current: {cleanup_error}")
 
         # STEP 6: Cleanup
         os.remove(temp_db)
