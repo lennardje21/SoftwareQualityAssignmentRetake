@@ -125,12 +125,22 @@ class LogFunction():
                         page += 1
                     else:
                         print("Already at last page.")
+                        # Log invalid navigation attempt (beyond last page)
+                        try:
+                            self.log_invalid_input(getattr(current_user, 'username', 'system'), 'logs_navigation', 'Attempt to navigate past last page')
+                        except Exception:
+                            pass
                         general_methods.hidden_input("Press Enter...")
                 elif cmd == 'p':
                     if page > 0:
                         page -= 1
                     else:
                         print("Already at first page.")
+                        # Log invalid navigation attempt (before first page)
+                        try:
+                            self.log_invalid_input(getattr(current_user, 'username', 'system'), 'logs_navigation', 'Attempt to navigate before first page')
+                        except Exception:
+                            pass
                         general_methods.hidden_input("Press Enter...")
                 elif cmd == 'g':
                     target = input(f"Enter page number (1-{total_pages}): ").strip()
@@ -140,14 +150,29 @@ class LogFunction():
                             page = idx
                         else:
                             print("Invalid page number.")
+                            # Log out-of-range page selection
+                            try:
+                                self.log_invalid_input(getattr(current_user, 'username', 'system'), 'logs_navigation', f'Go-to page out of range: {target}')
+                            except Exception:
+                                pass
                             general_methods.hidden_input("Press Enter...")
                     else:
                         print("Please enter a valid number.")
+                        # Log non-numeric page selection
+                        try:
+                            self.log_invalid_input(getattr(current_user, 'username', 'system'), 'logs_navigation', f'Go-to page non-numeric input: {target}')
+                        except Exception:
+                            pass
                         general_methods.hidden_input("Press Enter...")
                 elif cmd == 'q':
                     break
                 else:
                     print("Invalid choice.")
+                    # Log unknown navigation command
+                    try:
+                        self.log_invalid_input(getattr(current_user, 'username', 'system'), 'logs_navigation', f'Unknown navigation command: {cmd}')
+                    except Exception:
+                        pass
                     general_methods.hidden_input("Press Enter...")
 
         except Exception as e:
