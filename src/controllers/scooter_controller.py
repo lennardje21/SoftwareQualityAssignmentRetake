@@ -118,7 +118,7 @@ def add_scooter(current_user):
 
     # 5. BATTERY CAPACITY
     battery_capacity = Validation.get_valid_input(
-        prompt="Battery Capacity 0–100 (or type 'cancel'): ",
+        prompt="Battery Capacity 0-100 (or type 'cancel'): ",
         validation_fn=Validation.soc_single_value,
         username=username,
         field_name="battery capacity"
@@ -127,7 +127,7 @@ def add_scooter(current_user):
 
     # 6. SOC
     soc = Validation.get_valid_input(
-        prompt="State of Charge 0–100 (or type 'cancel'): ",
+        prompt="State of Charge 0-100 (or type 'cancel'): ",
         validation_fn=Validation.soc_single_value,
         username=username,
         field_name="state of charge"
@@ -136,8 +136,8 @@ def add_scooter(current_user):
 
     # 7 & 8. SOC RANGE (SR-1)
     soc_range_min, soc_range_max = Validation.get_valid_range_input(
-        prompt_min="Target SOC Range MIN 0–100 (or 'cancel'): ",
-        prompt_max="Target SOC Range MAX 0–100 (or 'cancel'): ",
+        prompt_min="Target SOC Range MIN 0-100 (or 'cancel'): ",
+        prompt_max="Target SOC Range MAX 0-100 (or 'cancel'): ",
         validation_fn=Validation.soc_range_validation,
         username=username,
         field_name="target SOC range"
@@ -146,14 +146,14 @@ def add_scooter(current_user):
 
     # 9 & 10. LOCATION (LOC-R1)
     location_latitude, location_longitude = Validation.get_valid_coordinates(
-        prompt_lat="Latitude (51.85000–52.05000, or 'cancel'): ",
-        prompt_lon="Longitude (4.40000–4.55000, or 'cancel'): ",
+        prompt_lat="Latitude (51.85000-52.05000, or 'cancel'): ",
+        prompt_lon="Longitude (4.40000-4.55000, or 'cancel'): ",
         validation_fn=Validation.location_validation,
         username=username
     )
     if location_latitude is None or location_longitude is None: return
 
-    # 11. OUT OF SERVICE (yes/no → ST-A)
+    # 11. OUT OF SERVICE (yes/no -> ST-A)
     out_of_service = Validation.get_valid_input(
         prompt="Out of Service? (yes/no, or 'cancel'): ",
         validation_fn=Validation.yes_no_validation,
@@ -375,8 +375,8 @@ def update_scooter_controller(current_user):
         '1': ('brand', "Brand (or 'cancel'): ", Validation.brand_validation, str),
         '2': ('model', "Model (or 'cancel'): ", Validation.model_validation, str),
         '4': ('top_speed', "Top Speed km/h (or 'cancel'): ", Validation.top_speed_validation, int),
-        '5': ('battery_capacity', "Battery Capacity 0–100 (or 'cancel'): ", Validation.soc_single_value, int),
-        '6': ('soc', "State of Charge 0–100 (or 'cancel'): ", Validation.soc_single_value, int),
+        '5': ('battery_capacity', "Battery Capacity 0-100 (or 'cancel'): ", Validation.soc_single_value, int),
+        '6': ('soc', "State of Charge 0-100 (or 'cancel'): ", Validation.soc_single_value, int),
         '10': ('mileage', "Mileage (or 'cancel'): ", Validation.mileage_validation, int),
         '11': ('last_maintenance_date', "Last Maintenance Date YYYY-MM-DD (or 'cancel'): ", Validation.last_maintenance_date_validation, str),
     }
@@ -406,8 +406,8 @@ def update_scooter_controller(current_user):
     # --- SOC RANGE (SR-1, both values) ---
     elif choice == '7':
         new_min, new_max = Validation.get_valid_range_input(
-            prompt_min="Target SOC Range MIN 0–100 (or 'cancel'): ",
-            prompt_max="Target SOC Range MAX 0–100 (or 'cancel'): ",
+            prompt_min="Target SOC Range MIN 0-100 (or 'cancel'): ",
+            prompt_max="Target SOC Range MAX 0-100 (or 'cancel'): ",
             validation_fn=Validation.soc_range_validation,
             username=username,
             field_name="target SOC range"
@@ -421,8 +421,8 @@ def update_scooter_controller(current_user):
     # --- LOCATION (LOC-1 + LOC-R1) ---
     elif choice == '8':
         new_lat, new_lon = Validation.get_valid_coordinates(
-            prompt_lat="Latitude (51.85000–52.05000, or 'cancel'): ",
-            prompt_lon="Longitude (4.40000–4.55000, or 'cancel'): ",
+            prompt_lat="Latitude (51.85000-52.05000, or 'cancel'): ",
+            prompt_lon="Longitude (4.40000-4.55000, or 'cancel'): ",
             validation_fn=Validation.location_validation,
             username=username
         )

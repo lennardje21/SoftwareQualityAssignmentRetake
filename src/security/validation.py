@@ -126,7 +126,7 @@ class Validation:
     def username_validation(username):
         if re.fullmatch(r"^[a-zA-Z_][a-zA-Z0-9_'.]{7,9}$", username):
             return True
-        print(f"Invalid username: {username}. Must be 8–10 characters, start with a letter or underscore, and may contain letters, numbers, underscores, apostrophes, and periods.")
+        print(f"Invalid username: {username}. Must be 8-10 characters, start with a letter or underscore, and may contain letters, numbers, underscores, apostrophes, and periods.")
         log_instance.log_invalid_input(username, "username", "Invalid format")
         return False
 
@@ -337,7 +337,7 @@ class Validation:
                 pass
 
         print(f"Invalid coordinates: lat={latitude}, lng={longitude}. "
-            f"Must be within lat 51.85000–52.05000 and lng 4.40000–4.55000, with exactly 5 decimal places.")
+            f"Must be within lat 51.85000-52.05000 and lng 4.40000-4.55000, with exactly 5 decimal places.")
         log_instance.log_invalid_input(username, "location", "Invalid coordinates")
         return False
 

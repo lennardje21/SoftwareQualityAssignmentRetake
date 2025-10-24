@@ -122,7 +122,7 @@ def create_new_user(current_user):
     if password is None:
         return
     allowed_roles = get_permitted_roles(current_user.role)
-    # Build a mapping from both names and numbers → role names
+    # Build a mapping from both names and numbers -> role names
     role_lookup = {str(v): k for k, v in allowed_roles.items()}
     role_lookup.update({k.lower(): k for k in allowed_roles})
     
@@ -366,13 +366,13 @@ def update_user_account(current_user):
                     return
 
                 if not Validation.username_validation(new_username):
-                    continue  # format invalid → retry
+                    continue  # format invalid -> retry
 
                 if get_user_by_username(new_username):
                     print("Username already exists. Please try again.")
                     log_instance.log_invalid_input(current_user.username, "username",
                                                    "Attempt to create duplicate username", False)
-                    continue  # duplicate → retry
+                    continue  # duplicate -> retry
 
                 update_data = {"username": new_username}
                 break
@@ -440,7 +440,7 @@ def change_own_password(current_user) -> bool:
     for attempt in range(3):
         old_password = input("Enter your current password: ").strip()
         if validate_password(old_password, stored_hash):
-            break  # correct → ga door
+            break  # correct -> ga door
         else:
             print("Incorrect current password.")
             log_instance.log_invalid_input(current_user.username, "password", "Incorrect current password")

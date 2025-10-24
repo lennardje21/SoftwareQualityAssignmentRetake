@@ -34,7 +34,7 @@ class RestoreCodeStore:
                 return data
             return []
         except Exception:
-            # Corrupt/missing file → treat as empty
+            # Corrupt/missing file -> treat as empty
             return []
 
     def _save_all_raw(self, records: List[Dict]) -> None:
