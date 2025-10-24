@@ -177,6 +177,7 @@ def delete_user_by_id(user_id):
         conn.commit()
         return cursor.rowcount > 0  # Return True if the deletion was successful
     finally:
+        cursor.close()
         close_connection(conn)
 
 def update_user_by_id(user_id, fields):
