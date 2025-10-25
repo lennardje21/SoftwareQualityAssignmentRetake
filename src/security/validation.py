@@ -343,9 +343,11 @@ class Validation:
             print("Invalid brand: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "brand", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\- ]{1,29}", brand):
+        # Must start and end with alphanumeric, can contain letters, digits, spaces, hyphens in middle
+        # Length: 1-30 characters (handles single char OR multi-char with proper start/end)
+        if re.fullmatch(r"^[a-zA-Z0-9]([a-zA-Z0-9 -]{0,28}[a-zA-Z0-9]|)$", brand):
             return True
-        print(f"Invalid brand: {brand}. Must be non-empty and valid format.")
+        print(f"Invalid brand: {brand}. Must be 1-30 characters, start and end with letter/digit, may contain spaces and hyphens.")
         Validation._get_log_instance().log_invalid_input(username, "brand", "Invalid format")
         return False
 
@@ -356,9 +358,11 @@ class Validation:
             print("Invalid model: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "model", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-\s]{1,29}", model):
+        # Must start and end with alphanumeric, can contain letters, digits, spaces, hyphens in middle
+        # Length: 1-30 characters (handles single char OR multi-char with proper start/end)
+        if re.fullmatch(r"^[a-zA-Z0-9]([a-zA-Z0-9 -]{0,28}[a-zA-Z0-9]|)$", model):
             return True
-        print(f"Invalid model: {model}. Must be non-empty and valid format.")
+        print(f"Invalid model: {model}. Must be 1-30 characters, start and end with letter/digit, may contain spaces and hyphens.")
         Validation._get_log_instance().log_invalid_input(username, "model", "Invalid format")
         return False
 
@@ -430,7 +434,7 @@ class Validation:
         if re.fullmatch(r"[0-9]{1,3}", min) and re.fullmatch(r"[0-9]{1,3}", max):
             min_val = int(min)
             max_val = int(max)
-            if 0 <= min_val <= 100 and 0 <= max_val <= 100 and min_val < max_val:
+            if 0 <= min_val <= 99 and 0 <= max_val <= 100 and min_val < max_val:
                 return True
         print(f"Invalid SOC range: {min}-{max}. Must be two numbers between 0 and 100 with min < max.")
         Validation._get_log_instance().log_invalid_input(username, "SOC range", "Invalid range")
@@ -467,10 +471,12 @@ class Validation:
             print("Invalid mileage: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "mileage", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[1-9]\d*|0", mileage):
-            return True
-        print(f"Invalid mileage: {mileage}. Must be a non-negative integer without leading zeros.")
-        Validation._get_log_instance().log_invalid_input(username, "mileage", "Invalid format")
+        if re.fullmatch(r"(?:[1-9]\d*|0)", mileage):
+            value = int(mileage)
+            if 0 <= value <= 100000:
+                return True
+        print(f"Invalid mileage: {mileage}. Must be 0-100000 km without leading zeros.")
+        Validation._get_log_instance().log_invalid_input(username, "mileage", "Invalid format or out of range")
         return False
 
     @staticmethod
