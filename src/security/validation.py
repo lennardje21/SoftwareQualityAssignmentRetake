@@ -431,7 +431,7 @@ class Validation:
             print("Invalid SOC range: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "SOC range", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[0-9]{1,3}", min) and re.fullmatch(r"[0-9]{1,3}", max):
+        if re.fullmatch(r"^[0-9]{1,3}$", min) and re.fullmatch(r"^[0-9]{1,3}$", max):
             min_val = int(min)
             max_val = int(max)
             if 0 <= min_val <= 100 and 0 <= max_val <= 100 and min_val < max_val:
