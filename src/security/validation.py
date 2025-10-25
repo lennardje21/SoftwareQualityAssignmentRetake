@@ -343,7 +343,9 @@ class Validation:
             print("Invalid brand: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "brand", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\- ]{1,29}", brand):
+        # Must start and end with alphanumeric, can contain letters, digits, spaces, hyphens in middle
+        # Length: 1-30 characters
+        if re.fullmatch(r"[a-zA-Z0-9]([a-zA-Z0-9\- ]{0,28}[a-zA-Z0-9])?", brand):
             return True
         print(f"Invalid brand: {brand}. Must be non-empty and valid format.")
         Validation._get_log_instance().log_invalid_input(username, "brand", "Invalid format")
@@ -356,7 +358,9 @@ class Validation:
             print("Invalid model: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "model", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-\s]{1,29}", model):
+        # Must start and end with alphanumeric, can contain letters, digits, spaces, hyphens in middle
+        # Length: 1-30 characters
+        if re.fullmatch(r"[a-zA-Z0-9]([a-zA-Z0-9\- ]{0,28}[a-zA-Z0-9])?", model):
             return True
         print(f"Invalid model: {model}. Must be non-empty and valid format.")
         Validation._get_log_instance().log_invalid_input(username, "model", "Invalid format")
