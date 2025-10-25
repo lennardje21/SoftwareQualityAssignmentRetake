@@ -174,7 +174,7 @@ class LogFunction():
 
                 # Update the logs with placeholders for each ID
                 placeholders = ', '.join(['?' for _ in log_ids])
-                update_query = f"UPDATE logs SET is_read = 1 WHERE id IN ({placeholders})"
+                update_query = "UPDATE logs SET is_read = 1 WHERE id IN (" + placeholders + ")"
                 
                 self.cursor.execute(update_query, log_ids)
                 self.db.commit()
