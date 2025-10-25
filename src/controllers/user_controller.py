@@ -447,7 +447,7 @@ def change_own_password(current_user) -> bool:
 
     # 3 attempts for current password
     for attempt in range(3):
-        old_password = input("Enter your current password: ").strip()
+        old_password = general_methods.input_password("Enter your current password: ").strip()
         # Security: reject null bytes in current password input
         if Validation.contains_null_byte(old_password):
             print("Invalid current password input.")

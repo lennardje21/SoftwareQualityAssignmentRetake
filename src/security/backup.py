@@ -82,7 +82,7 @@ class BackupManager:
 
     def create_backup(current_user):
         """Create a backup of the database."""
-
+        general_methods.clear_console()
         if not is_authorized(current_user.role, 'create_backup'):
                 print("You do not have permission to create backups.")
                 return
