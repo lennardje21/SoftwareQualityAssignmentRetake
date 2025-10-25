@@ -471,7 +471,7 @@ class Validation:
             print("Invalid mileage: contains forbidden characters.")
             Validation._get_log_instance().log_invalid_input(username, "mileage", "Null byte detected", suspicious=True)
             return False
-        if re.fullmatch(r"^(?:[1-9]\d*|0)$", mileage):
+        if re.fullmatch(r"(?:[1-9]\d*|0)", mileage):
             value = int(mileage)
             if 0 <= value <= 100000:
                 return True
