@@ -344,10 +344,10 @@ class Validation:
             Validation._get_log_instance().log_invalid_input(username, "brand", "Null byte detected", suspicious=True)
             return False
         # Must start and end with alphanumeric, can contain letters, digits, spaces, hyphens in middle
-        # Length: 1-30 characters
-        if re.fullmatch(r"[a-zA-Z0-9]([a-zA-Z0-9\- ]{0,28}[a-zA-Z0-9])?", brand):
+        # Length: 1-30 characters (handles single char OR multi-char with proper start/end)
+        if re.fullmatch(r"^[a-zA-Z0-9]([a-zA-Z0-9 -]{0,28}[a-zA-Z0-9]|)$", brand):
             return True
-        print(f"Invalid brand: {brand}. Must be non-empty and valid format.")
+        print(f"Invalid brand: {brand}. Must be 1-30 characters, start and end with letter/digit, may contain spaces and hyphens.")
         Validation._get_log_instance().log_invalid_input(username, "brand", "Invalid format")
         return False
 
@@ -359,10 +359,10 @@ class Validation:
             Validation._get_log_instance().log_invalid_input(username, "model", "Null byte detected", suspicious=True)
             return False
         # Must start and end with alphanumeric, can contain letters, digits, spaces, hyphens in middle
-        # Length: 1-30 characters
-        if re.fullmatch(r"[a-zA-Z0-9]([a-zA-Z0-9\- ]{0,28}[a-zA-Z0-9])?", model):
+        # Length: 1-30 characters (handles single char OR multi-char with proper start/end)
+        if re.fullmatch(r"^[a-zA-Z0-9]([a-zA-Z0-9 -]{0,28}[a-zA-Z0-9]|)$", model):
             return True
-        print(f"Invalid model: {model}. Must be non-empty and valid format.")
+        print(f"Invalid model: {model}. Must be 1-30 characters, start and end with letter/digit, may contain spaces and hyphens.")
         Validation._get_log_instance().log_invalid_input(username, "model", "Invalid format")
         return False
 
