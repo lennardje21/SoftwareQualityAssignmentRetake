@@ -136,7 +136,7 @@ def add_scooter(current_user):
 
     # 7 & 8. SOC RANGE (SR-1)
     soc_range_min, soc_range_max = Validation.get_valid_range_input(
-        prompt_min="Target SOC Range MIN 0-100 (or 'cancel'): ",
+        prompt_min="Target SOC Range MIN 0-99 (or 'cancel'): ",
         prompt_max="Target SOC Range MAX 0-100 (or 'cancel'): ",
         validation_fn=Validation.soc_range_validation,
         username=username,
@@ -416,7 +416,7 @@ def update_scooter_controller(current_user):
     # --- SOC RANGE (SR-1, both values) ---
     elif choice == '7':
         new_min, new_max = Validation.get_valid_range_input(
-            prompt_min="Target SOC Range MIN 0-100 (or 'cancel'): ",
+            prompt_min="Target SOC Range MIN 0-99 (or 'cancel'): ",
             prompt_max="Target SOC Range MAX 0-100 (or 'cancel'): ",
             validation_fn=Validation.soc_range_validation,
             username=username,
